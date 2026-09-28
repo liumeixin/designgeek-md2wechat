@@ -1,0 +1,63 @@
+/* 主题: 烟花夜 */
+#wenyan {
+    /* 背景 */
+    background-color: #0b0f19;
+    padding: 20px;
+    
+    /* 正文 */
+    --wy-text-color: #e0e6ed;
+    --wy-font-size: 16px;
+    --wy-line-height: 1.8;
+    --wy-letter-spacing: 0.5px;
+    
+    /* 强调 */
+    --wy-strong-color: #ff80ab;
+    --wy-em-color: #81d4fa;
+    
+    /* 标题 */
+    --wy-h1-color: #fff;
+    --wy-h1-align: center;
+    --wy-h1-size: 1.8em;
+    --wy-h2-color: #fff;
+    --wy-h2-size: 1.5em;
+    --wy-h3-color: #ffeb3b;
+    --wy-h3-size: 1.3em;
+    
+    /* 引用块 */
+    --wy-bq-bg: rgba(255, 64, 129, 0.05);
+    --wy-bq-border: 6px solid #ff4081;
+    --wy-bq-color: #ccc;
+    --wy-bq-radius: 0 12px 12px 0;
+    --wy-bq-font-style: normal;
+    
+    /* 代码 */
+    --wy-code-inline-color: #ffeb3b;
+    --wy-code-inline-bg: rgba(255, 235, 59, 0.1);
+    --wy-code-inline-border: none;
+    --wy-code-block-bg: #1a1e2a;
+    --wy-code-block-color: #81d4fa;
+    --wy-code-block-border: 1px solid rgba(255, 255, 255, 0.1);
+    --wy-code-block-shadow: none;
+    
+    /* 链接 */
+    --wy-link-color: #81d4fa;
+    --wy-link-border: 1px dashed #81d4fa;
+    
+    /* 表格 */
+    --wy-table-th-bg: rgba(0, 229, 255, 0.1);
+    --wy-table-th-color: #e0e6ed;
+    --wy-table-border: 1px solid rgba(255, 255, 255, 0.2);
+    --wy-table-stripe-bg: rgba(255, 255, 255, 0.03);
+    
+    /* 分割线 */
+    --wy-hr-border: 2px dotted rgba(255, 255, 255, 0.3);
+    --wy-hr-shadow: none;
+    
+    /* 图片 */
+    --wy-img-border: 2px solid #00e5ff;
+    --wy-img-radius: 8px;
+    --wy-img-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+    
+    /* 列表 */
+    --wy-list-marker-color: inherit;
+}

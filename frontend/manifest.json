@@ -1,0 +1,172 @@
+{
+  "themes": [
+    {
+      "id": "claude",
+      "name": "Claude"
+    },
+    {
+      "id": "cli",
+      "name": "CLI 终端"
+    },
+    {
+      "id": "color-pop",
+      "name": "Color Pop 波普"
+    },
+    {
+      "id": "cyber",
+      "name": "Cyber 赛博"
+    },
+    {
+      "id": "dark-green",
+      "name": "暗夜绿 Dark Green"
+    },
+    {
+      "id": "default",
+      "name": "Default"
+    },
+    {
+      "id": "fireworks",
+      "name": "Fireworks 烟花"
+    },
+    {
+      "id": "girl-pink",
+      "name": "Girl Pink 粉红"
+    },
+    {
+      "id": "grass",
+      "name": "Grass 草地"
+    },
+    {
+      "id": "grass-nobg",
+      "name": "草地无装饰 Grass Clean"
+    },
+    {
+      "id": "lavender-purple",
+      "name": "Lavender 薰衣草"
+    },
+    {
+      "id": "macarons",
+      "name": "Macarons 马卡龙"
+    },
+    {
+      "id": "newyear",
+      "name": "New Year 新年"
+    },
+    {
+      "id": "notebook-blue",
+      "name": "笔记蓝 Notebook Blue"
+    },
+    {
+      "id": "parrotalk",
+      "name": "Parrotalk 鹦鹉语"
+    },
+    {
+      "id": "purple-yellow-pop",
+      "name": "Purple Yellow Pop 紫黄"
+    },
+    {
+      "id": "sunrise",
+      "name": "Sunrise 日出"
+    },
+    {
+      "id": "ugreen",
+      "name": "UGREEN 绿联杂志"
+    },
+    {
+      "id": "winter",
+      "name": "Winter 冬日"
+    }
+  ],
+  "dimensions": [
+    {
+      "id": "background",
+      "name": "页面背景",
+      "icon": "🎨"
+    },
+    {
+      "id": "text-color",
+      "name": "文字颜色",
+      "icon": "✏️"
+    },
+    {
+      "id": "h1",
+      "name": "一级标题",
+      "icon": "📌"
+    },
+    {
+      "id": "h2",
+      "name": "二级标题",
+      "icon": "🔷"
+    },
+    {
+      "id": "h3h6",
+      "name": "H3-H6 标题",
+      "icon": "🔹"
+    },
+    {
+      "id": "bold",
+      "name": "加粗文字",
+      "icon": "🅱️"
+    },
+    {
+      "id": "italic",
+      "name": "斜体文字",
+      "icon": "𝐼"
+    },
+    {
+      "id": "blockquote",
+      "name": "引用块",
+      "icon": "💬"
+    },
+    {
+      "id": "inline-code",
+      "name": "行内代码",
+      "icon": "⌨️"
+    },
+    {
+      "id": "code-block",
+      "name": "代码块",
+      "icon": "💻"
+    },
+    {
+      "id": "ul",
+      "name": "无序列表",
+      "icon": "📋"
+    },
+    {
+      "id": "ol",
+      "name": "有序列表",
+      "icon": "🔢"
+    },
+    {
+      "id": "links",
+      "name": "链接",
+      "icon": "🔗"
+    },
+    {
+      "id": "table",
+      "name": "表格",
+      "icon": "📊"
+    },
+    {
+      "id": "image",
+      "name": "图片",
+      "icon": "🖼️"
+    },
+    {
+      "id": "hr",
+      "name": "分割线",
+      "icon": "➖"
+    },
+    {
+      "id": "footnote",
+      "name": "脚注",
+      "icon": "📝"
+    },
+    {
+      "id": "spacing",
+      "name": "段落间距",
+      "icon": "↔️"
+    }
+  ]
+}

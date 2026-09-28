@@ -1,0 +1,15 @@
+services:
+  wenyan-editor:
+    build: .
+    container_name: wenyan-editor-win
+    restart: unless-stopped
+    ports:
+      - "18888:8080"
+    volumes:
+      - ./frontend:/app/frontend:ro
+      - ./backend:/app/backend:ro
+      - ./scripts:/app/scripts:ro
+      - ./wenyan-data:/app/data
+    environment:
+      - PORT=8080
+      - HOST=0.0.0.0

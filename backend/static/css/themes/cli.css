@@ -1,0 +1,63 @@
+/* 主题: 终端绿 */
+#wenyan {
+    /* 背景 */
+    background-color: #121212;
+    padding: 20px;
+    
+    /* 正文 */
+    --wy-text-color: #d4d4d4;
+    --wy-font-size: 15px;
+    --wy-line-height: 1.8;
+    --wy-letter-spacing: 0.5px;
+    
+    /* 强调 */
+    --wy-strong-color: #4AF626;
+    --wy-em-color: #4AF626;
+    
+    /* 标题 */
+    --wy-h1-color: #4AF626;
+    --wy-h1-align: left;
+    --wy-h1-size: 1.5em;
+    --wy-h2-color: #4AF626;
+    --wy-h2-size: 1.3em;
+    --wy-h3-color: #4AF626;
+    --wy-h3-size: 1.15em;
+    
+    /* 引用块 */
+    --wy-bq-bg: #0d0d0d;
+    --wy-bq-border: 4px solid #608b4e;
+    --wy-bq-color: #608b4e;
+    --wy-bq-radius: 0 8px 8px 0;
+    --wy-bq-font-style: normal;
+    
+    /* 代码 */
+    --wy-code-inline-color: #4AF626;
+    --wy-code-inline-bg: #1e1e1e;
+    --wy-code-inline-border: 1px solid #333;
+    --wy-code-block-bg: #000000;
+    --wy-code-block-color: #4AF626;
+    --wy-code-block-border: 1px solid #333;
+    --wy-code-block-shadow: inset 0 0 10px rgba(74, 246, 38, 0.05);
+    
+    /* 链接 */
+    --wy-link-color: #4AF626;
+    --wy-link-border: 1px solid #4AF626;
+    
+    /* 表格 */
+    --wy-table-th-bg: #1a1a1a;
+    --wy-table-th-color: #d4d4d4;
+    --wy-table-border: 1px solid #333;
+    --wy-table-stripe-bg: #161616;
+    
+    /* 分割线 */
+    --wy-hr-border: 1px dashed #333;
+    --wy-hr-shadow: none;
+    
+    /* 图片 */
+    --wy-img-border: 1px solid #333;
+    --wy-img-radius: 6px;
+    --wy-img-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    
+    /* 列表 */
+    --wy-list-marker-color: inherit;
+}

@@ -1,0 +1,37 @@
+/**
+ * 主题名称：暗夜绿 (Dark Green)
+ * 风格描述：深色护眼、绿色强调、极简科技风
+ */
+#wenyan {
+    font-family: var(--sans-serif-font);
+    line-height: 1.8;
+    font-size: 16px;
+    color: #b3b3b3;
+    background-color: #1e1e1e;
+    padding: 20px;
+}
+#wenyan h1, #wenyan h2, #wenyan h3, #wenyan h4, #wenyan h5, #wenyan h6,
+#wenyan p, #wenyan pre { margin: 1.2em 0; }
+#wenyan p { letter-spacing: 0.5px; }
+#wenyan p strong { color: #4caf50; font-weight: bold; }
+#wenyan p em { color: #81c784; font-style: italic; }
+#wenyan h1 { text-align: center; font-size: 1.6em; color: #4caf50; margin-top: 2em; margin-bottom: 1.5em; padding-bottom: 0.3em; border-bottom: 2px solid #4caf50; }
+#wenyan h2 { text-align: left; font-size: 1.3em; color: #4caf50; font-weight: bold; padding-left: 12px; border-left: 4px solid #4caf50; margin-top: 1.8em; }
+#wenyan h3 { font-size: 1.15em; color: #66bb6a; font-weight: bold; }
+#wenyan h4 { font-size: 1.05em; color: #81c784; }
+#wenyan h5 { font-size: 1em; color: #a5d6a7; }
+#wenyan h6 { font-size: 0.95em; color: #c8e6c9; }
+#wenyan ul, #wenyan ol { padding-left: 1.5em; color: #b3b3b3; }
+#wenyan li { margin-bottom: 0.5em; }
+#wenyan li::marker { color: #4caf50; }
+#wenyan img { max-width: 100%; height: auto; margin: 1.5em auto; display: block; border-radius: 8px; border: 1px solid #333; }
+#wenyan table { border-collapse: collapse; margin: 1.5em auto; width: 100%; }
+#wenyan table td, #wenyan table th { font-size: 0.9em; padding: 10px 14px; border: 1px solid #333; color: #b3b3b3; }
+#wenyan table th { font-weight: bold; background-color: #2a2a2a; color: #4caf50; }
+#wenyan table tr:nth-child(2n) { background-color: #252525; }
+#wenyan blockquote { background: #2a2a2a; border-left: 4px solid #4caf50; margin: 1.5em 0; padding: 1em 1.2em; color: #b3b3b3; font-size: 0.95em; border-radius: 0 8px 8px 0; }
+#wenyan p code, #wenyan li code { font-family: var(--monospace-font); color: #4caf50; background-color: #2a2a2a; padding: 3px 6px; font-size: 0.85em; border-radius: 4px; border: 1px solid #333; }
+#wenyan pre { border-radius: 8px; line-height: 1.6; margin: 1.5em 0; padding: 1.2em; background-color: #121212; border: 1px solid #333; }
+#wenyan pre code { font-family: var(--monospace-font); display: block; overflow-x: auto; color: #4caf50; background-color: #121212; font-size: 0.85em; }
+#wenyan hr { border: none; border-top: 1px solid #4caf50; margin: 2.5em 0; }
+#wenyan a { color: #4caf50; text-decoration: none; border-bottom: 1px solid #4caf50; }

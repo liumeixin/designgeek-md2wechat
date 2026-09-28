@@ -1,0 +1,173 @@
+/**
+ * 主题名称：绿联杂志 (UGREEN Magazine)
+ * 风格描述：深色编号标题 + 绿色强调 + 杂志排版
+ * Markdown映射:
+ *   # 01 STORAGE STRATEGY → 大号灰色编号 + 绿色英文副标题（h1+h2紧邻）
+ *   ## 中文标题 → 深色加粗中文标题（h3渲染）
+ *   ### 四级标题 → 普通四级标题（h4渲染）
+ *   > 引用 → 绿色左边框提示框
+ *   > **标题** 开头 → 深色卡片
+ */
+
+/* 全局属性 */
+#wenyan {
+    font-family: var(--sans-serif-font);
+    line-height: 2;
+    font-size: 16px;
+    color: #30352f;
+    background-color: #ffffff;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 全局子元素属性 */
+#wenyan h1, #wenyan h2, #wenyan h3, #wenyan h4, #wenyan h5, #wenyan h6,
+#wenyan p, #wenyan pre { margin: 0.8em 0; }
+
+/* 段落 */
+#wenyan p { letter-spacing: 0.5px; }
+
+/* 加粗 - 绿色强调 */
+#wenyan p strong { color: #1ab552; font-weight: bold; }
+
+/* 斜体 */
+#wenyan p em { color: #2f3931; font-style: italic; }
+
+/* ===== 一级标题 - 大号灰色编号 (01 02 03...) ===== */
+/* 用法: # 01 STORAGE STRATEGY */
+#wenyan h1 {
+    font-size: 3.25em;
+    color: #d7ddd6;
+    font-weight: 400;
+    letter-spacing: -3px;
+    margin-top: 1.8em;
+    margin-bottom: 0;
+    line-height: 1;
+    text-align: left;
+}
+
+/* ===== 二级标题 - 绿色英文副标题 ===== */
+/* 用法: 紧跟在h1后面，如 ## STORAGE STRATEGY */
+#wenyan h2 {
+    font-size: 1em;
+    color: #1ab552;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-top: 0.4em;
+    margin-bottom: 0.5em;
+    line-height: 1.4;
+    text-align: left;
+    text-transform: uppercase;
+    padding: 0;
+    border: none;
+    background: none;
+}
+
+/* ===== 三级标题 - 深色加粗中文标题 ===== */
+/* 用法: ### 文件同步不组RAID，改用存储池间备份 */
+#wenyan h3 {
+    font-size: 1.5625em;
+    color: #151815;
+    font-weight: 800;
+    margin-top: 0.2em;
+    margin-bottom: 1em;
+    line-height: 1.45;
+    text-align: left;
+    border: none;
+    padding: 0;
+}
+
+/* 四级标题 */
+#wenyan h4 {
+    font-size: 1.15em;
+    color: #2f3931;
+    font-weight: 700;
+}
+
+/* 五级标题 */
+#wenyan h5 {
+    font-size: 1.05em;
+    color: #443a31;
+    font-weight: 600;
+}
+
+/* 六级标题 */
+#wenyan h6 {
+    font-size: 0.95em;
+    color: #576B95;
+    font-weight: 600;
+}
+
+/* 引用块 - 绿色左边框（提示/说明/注意） */
+#wenyan blockquote {
+    background: #eef4ee;
+    border-left: 3px solid #1fd45f;
+    margin: 1.2em 0;
+    padding: 16px 18px;
+    color: #526055;
+    font-size: 0.875em;
+    line-height: 1.85;
+    border-radius: 0;
+    font-style: normal;
+}
+
+/* 引用块内加粗 - 深色标题 */
+#wenyan blockquote strong { color: #243026; }
+
+/* 行内代码 */
+#wenyan p code, #wenyan li code {
+    font-family: var(--monospace-font);
+    color: #1ab552;
+    background-color: #eef4ee;
+    padding: 2px 6px;
+    font-size: 1em;
+    border-radius: 3px;
+}
+
+/* 代码块 - 深色背景 */
+#wenyan pre {
+    border-radius: 8px;
+    line-height: 1.6;
+    margin: 1.2em 0;
+    padding: 16px;
+    background-color: #151a16;
+    border: 1px solid #2a332c;
+    color: #eef2ed;
+    font-size: 0.875em;
+}
+
+#wenyan pre code {
+    font-family: var(--monospace-font);
+    display: block;
+    overflow-x: auto;
+    color: #eef2ed;
+    background-color: #151a16;
+    font-size: 1em;
+}
+
+/* 链接 */
+#wenyan a {
+    color: #1ab552;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(26, 181, 82, 0.3);
+}
+
+/* 列表 */
+#wenyan ul, #wenyan ol { padding-left: 1.2em; color: #30352f; }
+#wenyan li { margin-bottom: 0.5em; line-height: 1.8; }
+#wenyan li::marker { color: #1ab552; }
+
+/* 表格 */
+#wenyan table { border-collapse: collapse; margin: 1.2em auto; width: 100%; }
+#wenyan table td, #wenyan table th { font-size: 0.9em; padding: 10px 14px; border: 1px solid #cfd6cf; color: #30352f; }
+#wenyan table th { font-weight: 600; background-color: #151a16; color: #89f0a8; }
+#wenyan table tr:nth-child(2n) { background-color: #f0f4f0; }
+
+/* 图片 */
+#wenyan img { max-width: 100%; height: auto; margin: 1.5em auto; display: block; border-radius: 8px; }
+
+/* 分割线 */
+#wenyan hr { border: none; border-top: 1px solid #cfd6cf; margin: 2em 0; }
+
+/* 脚注 */
+#wenyan .footnote { font-size: 0.8em; color: #657067; }

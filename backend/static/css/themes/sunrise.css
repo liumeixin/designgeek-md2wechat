@@ -1,0 +1,64 @@
+/* 主题: 日出暖 */
+#wenyan {
+    /* 背景 */
+    background-color: white;
+    background-image: linear-gradient(to bottom, #fff5e6 0%, #ffe8cc 50%, #ffd9b3 100%);
+    padding: 20px;
+    
+    /* 正文 */
+    --wy-text-color: #4a2c2a;
+    --wy-font-size: 16px;
+    --wy-line-height: 1.8;
+    --wy-letter-spacing: 0.5px;
+    
+    /* 强调 */
+    --wy-strong-color: #d84315;
+    --wy-em-color: #ff6f00;
+    
+    /* 标题 */
+    --wy-h1-color: #e64a19;
+    --wy-h1-align: center;
+    --wy-h1-size: 1.6em;
+    --wy-h2-color: #f4511e;
+    --wy-h2-size: 1.4em;
+    --wy-h3-color: #ff5722;
+    --wy-h3-size: 1.25em;
+    
+    /* 引用块 */
+    --wy-bq-bg: linear-gradient(to right, #fff8f0 0%, #fff3e0 100%);
+    --wy-bq-border: 6px solid #ff8a65;
+    --wy-bq-color: #5d4037;
+    --wy-bq-radius: 0 12px 12px 0;
+    --wy-bq-font-style: normal;
+    
+    /* 代码 */
+    --wy-code-inline-color: #e64a19;
+    --wy-code-inline-bg: #fff3e0;
+    --wy-code-inline-border: none;
+    --wy-code-block-bg: #fff8f0;
+    --wy-code-block-color: #bf360c;
+    --wy-code-block-border: 1px solid #ffe0b2;
+    --wy-code-block-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.03);
+    
+    /* 链接 */
+    --wy-link-color: #f4511e;
+    --wy-link-border: 1px dashed #ff8a65;
+    
+    /* 表格 */
+    --wy-table-th-bg: #e6e6e6;
+    --wy-table-th-color: #4a2c2a;
+    --wy-table-border: 1px solid #ffccbc;
+    --wy-table-stripe-bg: #fff8f0;
+    
+    /* 分割线 */
+    --wy-hr-border: 2px dashed #ffcc80;
+    --wy-hr-shadow: none;
+    
+    /* 图片 */
+    --wy-img-border: 2px solid #ffe0b2;
+    --wy-img-radius: 12px;
+    --wy-img-shadow: 0 6px 16px rgba(255, 138, 101, 0.2);
+    
+    /* 列表 */
+    --wy-list-marker-color: inherit;
+}

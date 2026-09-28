@@ -1,0 +1,63 @@
+/* 主题: 冬日蓝 */
+#wenyan {
+    /* 背景 */
+    background-color: #f8fbfc;
+    padding: 20px;
+    
+    /* 正文 */
+    --wy-text-color: #2c3e50;
+    --wy-font-size: 16px;
+    --wy-line-height: 1.8;
+    --wy-letter-spacing: 0.5px;
+    
+    /* 强调 */
+    --wy-strong-color: #1a5276;
+    --wy-em-color: #5dade2;
+    
+    /* 标题 */
+    --wy-h1-color: #154360;
+    --wy-h1-align: center;
+    --wy-h1-size: 1.6em;
+    --wy-h2-color: #1a5276;
+    --wy-h2-size: 1.4em;
+    --wy-h3-color: #2471a3;
+    --wy-h3-size: 1.25em;
+    
+    /* 引用块 */
+    --wy-bq-bg: #f0f6fa;
+    --wy-bq-border: 6px solid #5dade2;
+    --wy-bq-color: #34495e;
+    --wy-bq-radius: 0 12px 12px 0;
+    --wy-bq-font-style: normal;
+    
+    /* 代码 */
+    --wy-code-inline-color: #154360;
+    --wy-code-inline-bg: #eaf2f8;
+    --wy-code-inline-border: none;
+    --wy-code-block-bg: #f2f7fa;
+    --wy-code-block-color: #1a5276;
+    --wy-code-block-border: 1px solid #d6eaf8;
+    --wy-code-block-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.03);
+    
+    /* 链接 */
+    --wy-link-color: #2980b9;
+    --wy-link-border: 1px dashed #85c1e9;
+    
+    /* 表格 */
+    --wy-table-th-bg: #eaf2f8;
+    --wy-table-th-color: #2c3e50;
+    --wy-table-border: 1px solid #d6eaf8;
+    --wy-table-stripe-bg: #f7fbff;
+    
+    /* 分割线 */
+    --wy-hr-border: 2px dashed #aed6f1;
+    --wy-hr-shadow: none;
+    
+    /* 图片 */
+    --wy-img-border: 1px solid #eaf2f8;
+    --wy-img-radius: 8px;
+    --wy-img-shadow: 0 4px 12px rgba(41, 128, 185, 0.1);
+    
+    /* 列表 */
+    --wy-list-marker-color: inherit;
+}

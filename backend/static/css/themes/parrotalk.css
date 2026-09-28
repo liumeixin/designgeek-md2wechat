@@ -1,0 +1,63 @@
+/* 主题: 鹦鹉蓝 */
+#wenyan {
+    /* 背景 */
+    background-color: white;
+    padding: 10px;
+    
+    /* 正文 */
+    --wy-text-color: #333333;
+    --wy-font-size: 16px;
+    --wy-line-height: 1.75;
+    --wy-letter-spacing: 0.05em;
+    
+    /* 强调 */
+    --wy-strong-color: #1988FC;
+    --wy-em-color: #1988FC;
+    
+    /* 标题 */
+    --wy-h1-color: #1988FC;
+    --wy-h1-align: center;
+    --wy-h1-size: 1.4em;
+    --wy-h2-color: #222222;
+    --wy-h2-size: 1.2em;
+    --wy-h3-color: #1988FC;
+    --wy-h3-size: 1.15em;
+    
+    /* 引用块 */
+    --wy-bq-bg: rgba(25, 136, 252, 0.06);
+    --wy-bq-border: 4px solid #1988FC;
+    --wy-bq-color: #555555;
+    --wy-bq-radius: 0 4px 4px 0;
+    --wy-bq-font-style: normal;
+    
+    /* 代码 */
+    --wy-code-inline-color: #1988FC;
+    --wy-code-inline-bg: rgba(25, 136, 252, 0.08);
+    --wy-code-inline-border: none;
+    --wy-code-block-bg: #f6f8fa;
+    --wy-code-block-color: #333333;
+    --wy-code-block-border: 1px solid #e1e8f0;
+    --wy-code-block-shadow: none;
+    
+    /* 链接 */
+    --wy-link-color: #1988FC;
+    --wy-link-border: 1px solid rgba(25, 136, 252, 0.5);
+    
+    /* 表格 */
+    --wy-table-th-bg: #1988FC;
+    --wy-table-th-color: #333;
+    --wy-table-border: 1px solid #e1e8f0;
+    --wy-table-stripe-bg: rgba(25, 136, 252, 0.04);
+    
+    /* 分割线 */
+    --wy-hr-border: 1px dashed rgba(25, 136, 252, 0.4);
+    --wy-hr-shadow: none;
+    
+    /* 图片 */
+    --wy-img-border: none;
+    --wy-img-radius: 4px;
+    --wy-img-shadow: 0 4px 12px rgba(25, 136, 252, 0.08);
+    
+    /* 列表 */
+    --wy-list-marker-color: #1988FC;
+}

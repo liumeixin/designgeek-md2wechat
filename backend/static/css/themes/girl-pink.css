@@ -1,0 +1,63 @@
+/* 主题: 粉色少女 */
+#wenyan {
+    /* 背景 */
+    background-color: #fff7f9;
+    padding: 20px;
+    
+    /* 正文 */
+    --wy-text-color: #4a3b42;
+    --wy-font-size: 16px;
+    --wy-line-height: 1.8;
+    --wy-letter-spacing: 0.8px;
+    
+    /* 强调 */
+    --wy-strong-color: #d81b60;
+    --wy-em-color: #ec407a;
+    
+    /* 标题 */
+    --wy-h1-color: #c2185b;
+    --wy-h1-align: center;
+    --wy-h1-size: 1.6em;
+    --wy-h2-color: #ad1457;
+    --wy-h2-size: 1.4em;
+    --wy-h3-color: #c2185b;
+    --wy-h3-size: 1.25em;
+    
+    /* 引用块 */
+    --wy-bq-bg: #fdf4f6;
+    --wy-bq-border: 6px solid #f06292;
+    --wy-bq-color: #6a4f5b;
+    --wy-bq-radius: 0 12px 12px 0;
+    --wy-bq-font-style: normal;
+    
+    /* 代码 */
+    --wy-code-inline-color: #c2185b;
+    --wy-code-inline-bg: #fce4ec;
+    --wy-code-inline-border: none;
+    --wy-code-block-bg: #fef3f6;
+    --wy-code-block-color: #880e4f;
+    --wy-code-block-border: 1px solid #f8bbd0;
+    --wy-code-block-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.02);
+    
+    /* 链接 */
+    --wy-link-color: #e91e63;
+    --wy-link-border: 1px dashed #f48fb1;
+    
+    /* 表格 */
+    --wy-table-th-bg: #fce4ec;
+    --wy-table-th-color: #5d4037;
+    --wy-table-border: 1px solid #f8bbd0;
+    --wy-table-stripe-bg: #fff2f5;
+    
+    /* 分割线 */
+    --wy-hr-border: 2px dashed #f8bbd0;
+    --wy-hr-shadow: none;
+    
+    /* 图片 */
+    --wy-img-border: 2px solid #fce4ec;
+    --wy-img-radius: 16px;
+    --wy-img-shadow: 0 6px 18px rgba(233, 30, 99, 0.08);
+    
+    /* 列表 */
+    --wy-list-marker-color: inherit;
+}

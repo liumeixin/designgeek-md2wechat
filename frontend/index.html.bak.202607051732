@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文颜风格 Markdown 编辑器</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+/* ========== RESET & BASE ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ui-bg: #f8f9fa;
+  --ui-border: #e0e0e0;
+  --ui-text: #333;
+  --ui-accent: #1988FC;
+  --ui-hover: #e8f0fe;
+  --ui-panel-bg: #fff;
+  --ui-radius: 8px;
+  --ui-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--ui-bg); color: var(--ui-text); }
+
+/* ========== LAYOUT ========== */
+.app { display: flex; flex-direction: column; height: 100vh; }
+.header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 16px; background: var(--ui-panel-bg); border-bottom: 1px solid var(--ui-border);
+  box-shadow: var(--ui-shadow); z-index: 10; flex-shrink: 0; height: 52px;
+}
+.header .logo { font-weight: 700; font-size: 18px; color: var(--ui-accent); white-space: nowrap; }
+.header .spacer { flex: 1; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border: 1px solid var(--ui-border); border-radius: var(--ui-radius);
+  background: var(--ui-panel-bg); color: var(--ui-text); font-size: 13px;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.btn:hover { background: var(--ui-hover); border-color: var(--ui-accent); }
+.btn.active { background: var(--ui-accent); color: #fff; border-color: var(--ui-accent); }
+.btn-primary { background: var(--ui-accent); color: #fff; border-color: var(--ui-accent); }
+.btn-primary:hover { background: #1470d1; }
+.btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+/* Theme select */
+.theme-select {
+  padding: 6px 10px; border: 1px solid var(--ui-border); border-radius: var(--ui-radius);
+  background: var(--ui-panel-bg); font-size: 13px; cursor: pointer; outline: none;
+}
+.theme-select:focus { border-color: var(--ui-accent); }
+
+/* Main content */
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* Editor pane */
+.editor-pane {
+  flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--ui-border);
+  min-width: 0;
+}
+.editor-toolbar {
+  display: flex; align-items: center; gap: 4px; padding: 6px 12px;
+  background: #fafafa; border-bottom: 1px solid var(--ui-border); flex-shrink: 0;
+}
+.editor-toolbar .toolbar-btn {
+  width: 28px; height: 28px; border: none; border-radius: 4px; background: transparent;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: #666; font-size: 14px; transition: all 0.15s;
+}
+.editor-toolbar .toolbar-btn:hover { background: #e8e8e8; color: #333; }
+.editor-toolbar .divider { width: 1px; height: 20px; background: #ddd; margin: 0 4px; }
+
+#editor {
+  flex: 1; width: 100%; border: none; outline: none; resize: none;
+  padding: 20px 24px; font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 14px; line-height: 1.6; color: #333; background: #fff;
+  tab-size: 2;
+}
+#editor::placeholder { color: #bbb; }
+
+/* Preview pane */
+.preview-pane {
+  flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+}
+.preview-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 12px; background: #fafafa; border-bottom: 1px solid var(--ui-border); flex-shrink: 0;
+}
+.preview-header span { font-size: 12px; color: #999; }
+
+/* Phone preview mode */
+#preview-scroll.phone-mode {
+  display: flex; justify-content: center; align-items: flex-start;
+  background: #f0f0f0; padding: 20px 12px;
+}
+.phone-frame {
+  width: 375px; min-height: 600px; background: #fff;
+  border-radius: 32px; border: 3px solid #333;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18), inset 0 0 0 1px rgba(255,255,255,0.1);
+  overflow: hidden; position: relative; flex-shrink: 0;
+}
+.phone-notch {
+  width: 150px; height: 28px; background: #333;
+  border-radius: 0 0 16px 16px; margin: 0 auto; position: relative; z-index: 2;
+}
+.phone-status-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 4px 20px 0; font-size: 12px; color: #333; font-weight: 600;
+}
+.phone-content {
+  padding: 12px 16px 20px; overflow-y: auto; max-height: 640px;
+}
+#preview-scroll.phone-mode #wenyan {
+  max-width: 100% !important; margin: 0 !important;
+}
+#preview-scroll:not(.phone-mode) #wenyan {
+  max-width: 700px; margin: 0 auto;
+}
+/* Toggle button */
+.phone-toggle, .xhs-toggle {
+  padding: 3px 8px; border: 1px solid #ddd; border-radius: 4px;
+  background: #fff; color: #666; font-size: 11px; cursor: pointer;
+}
+.phone-toggle:hover, .xhs-toggle:hover { background: #f0f0f0; }
+.phone-toggle.active, .xhs-toggle.active { background: #333; color: #fff; border-color: #333; }
+
+/* ========== XHS PREVIEW MODE ========== */
+#preview-scroll.xhs-mode {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  padding: 16px !important; background: #f0f0f0 !important;
+  align-content: flex-start; overflow-y: auto;
+}
+.xhs-toolbar {
+  display: none; align-items: center; gap: 8px;
+  padding: 6px 12px; background: #f5f5f5;
+  border-bottom: 1px solid var(--ui-border); flex-shrink: 0;
+}
+.xhs-toolbar.visible { display: flex; }
+.xhs-toolbar select, .xhs-toolbar button {
+  padding: 4px 10px; border: 1px solid #ddd; border-radius: 4px;
+  font-size: 12px; background: #fff; cursor: pointer; white-space: nowrap;
+}
+.xhs-toolbar button:hover { background: #e8f0fe; }
+.xhs-toolbar .xhs-page-count { font-size: 12px; color: #999; }
+.xhs-page-card {
+  position: relative; width: 270px; flex-shrink: 0;
+  border-radius: 8px; overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12); background: #fff;
+}
+.xhs-page-frame {
+  width: 270px; height: 360px; overflow: hidden; position: relative; background: #fff;
+}
+.xhs-page-content {
+  position: absolute; top: 0; left: 0;
+  width: 1080px; height: 1440px;
+  transform: scale(0.25); transform-origin: top left;
+  background: #fff; overflow: hidden;
+}
+.xhs-page-content #wenyan { max-width: 100% !important; margin: 0 !important; }
+.xhs-page-content img { 
+  max-width: 100% !important; 
+  height: auto !important; 
+  display: block !important;
+  box-shadow: none !important;
+  border: 1px solid #2c3e50 !important;
+}
+.xhs-page-content pre { 
+  white-space: pre-wrap !important; 
+  word-break: break-all !important; 
+  box-shadow: none !important;
+  border: 1px solid #2c3e50 !important;
+}
+.xhs-page-content table { 
+  width: 100% !important; 
+  table-layout: fixed !important; 
+  word-break: break-all !important;
+  box-shadow: none !important;
+  border: 1px solid #2c3e50 !important;
+}
+.xhs-page-info {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 10px; font-size: 12px; color: #666;
+}
+.xhs-page-info .xhs-page-num { font-weight: 600; }
+.xhs-page-info .xhs-dl-btn {
+  padding: 2px 8px; border: 1px solid #ddd; border-radius: 4px;
+  background: #fff; font-size: 11px; cursor: pointer;
+}
+.xhs-page-info .xhs-dl-btn:hover { background: #e8f0fe; }
+.xhs-page-info .xhs-dl-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.xhs-empty {
+  width: 100%; text-align: center; padding: 60px 20px;
+  color: #999; font-size: 14px;
+}
+
+#preview-scroll {
+  flex: 1; overflow-y: auto; padding: 20px 24px; background: #fff;
+}
+
+/* ========== THEME PREVIEW STYLES ========== */
+#wenyan {
+  max-width: 700px; margin: 0 auto;
+  font-family: var(--sans-serif-font, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+}
+
+/* 行内代码样式 - 修复 html2canvas 渲染问题 */
+#wenyan code {
+  font-family: var(--monospace-font, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace);
+  background-color: rgba(0, 0, 0, 0.06);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-size: 16px;
+}
+
+/* 图片方向样式：实时检测后应用 */
+#wenyan img.landscape {
+  width: 100% !important;
+  height: auto !important;
+  display: block !important;
+}
+
+#wenyan img.portrait {
+  width: 48% !important;
+  height: auto !important;
+  float: left !important;
+  margin-right: 2% !important;
+  display: block !important;
+}
+
+/* 竖版图后面的元素 */
+#wenyan img.portrait + * {
+  display: inline-block !important;
+  width: 50% !important;
+  vertical-align: top !important;
+}
+
+/* ========== RIGHT PANEL: DIMENSION SWITCHER ========== */
+.right-panel {
+  width: 280px; background: var(--ui-panel-bg); border-left: 1px solid var(--ui-border);
+  overflow-y: auto; flex-shrink: 0; display: none; transition: width 0.2s;
+}
+.right-panel.open { display: block; }
+.panel-section { border-bottom: 1px solid #f0f0f0; }
+.panel-section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; cursor: pointer; user-select: none;
+  font-size: 13px; font-weight: 600; color: #555; transition: background 0.15s;
+}
+.panel-section-header:hover { background: #f8f8f8; }
+.panel-section-header .arrow { transition: transform 0.2s; font-size: 10px; color: #999; }
+.panel-section-header.collapsed .arrow { transform: rotate(-90deg); }
+.panel-section-body { padding: 8px 14px 14px; }
+.panel-section-header.collapsed + .panel-section-body { display: none; }
+
+.dim-item {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+}
+.dim-item:last-child { margin-bottom: 0; }
+.dim-label { font-size: 12px; color: #666; min-width: 80px; white-space: nowrap; }
+.dim-select {
+  flex: 1; padding: 4px 8px; border: 1px solid #e0e0e0; border-radius: 6px;
+  font-size: 12px; background: #fafafa; cursor: pointer; outline: none;
+}
+.dim-select:focus { border-color: var(--ui-accent); }
+
+/* ========== PREVIEW AREA: FULL THEME (when in whole-theme mode) ========== */
+/* These selectors ensure the preview uses the correct theme */
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">✦ 文颜风格编辑器</div>
+    <div class="spacer"></div>
+
+    <select id="themeSelect" class="theme-select" title="整体主题切换">
+      <option value="">选择主题...</option>
+    </select>
+
+    <button id="togglePanel" class="btn" title="元素风格混搭面板">
+      <svg viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
+      元素混搭
+    </button>
+
+    <button id="copyBtn" class="btn btn-primary" title="复制 HTML 到剪贴板">
+      <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+      复制 HTML
+    </button>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <!-- Editor -->
+    <div class="editor-pane">
+      <div class="editor-toolbar">
+        <button class="toolbar-btn" data-action="bold" title="加粗 (Ctrl+B)"><b>B</b></button>
+        <button class="toolbar-btn" data-action="italic" title="斜体 (Ctrl+I)"><i>I</i></button>
+        <button class="toolbar-btn" data-action="strikethrough" title="删除线"><s>S</s></button>
+        <div class="divider"></div>
+        <button class="toolbar-btn" data-action="h1" title="一级标题">H1</button>
+        <button class="toolbar-btn" data-action="h2" title="二级标题">H2</button>
+        <button class="toolbar-btn" data-action="h3" title="三级标题">H3</button>
+        <div class="divider"></div>
+        <button class="toolbar-btn" data-action="ul" title="无序列表">•</button>
+        <button class="toolbar-btn" data-action="ol" title="有序列表">1.</button>
+        <button class="toolbar-btn" data-action="checklist" title="清单">☑</button>
+        <div class="divider"></div>
+        <button class="toolbar-btn" data-action="quote" title="引用">&ldquo;</button>
+        <button class="toolbar-btn" data-action="code" title="行内代码">&lt;/&gt;</button>
+        <button class="toolbar-btn" data-action="codeblock" title="代码块">```</button>
+        <button class="toolbar-btn" data-action="link" title="链接">🔗</button>
+        <button class="toolbar-btn" data-action="image" title="图片">🖼</button>
+        <button class="toolbar-btn" data-action="table" title="表格">▦</button>
+        <button class="toolbar-btn" data-action="hr" title="分割线">—</button>
+      </div>
+      <textarea id="editor" placeholder="在此输入 Markdown 内容...&#10;&#10;支持 front matter 和标准 Markdown 语法"></textarea>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-pane">
+      <div class="preview-header">
+        <span>预览</span>
+        <button class="phone-toggle" onclick="togglePhonePreview()" title="手机预览 375px">📱 手机</button>
+        <button class="xhs-toggle" onclick="toggleXhsMode()" title="小红书排版 1080×1440">📷 小红书</button>
+        <span id="charCount">0 字</span>
+      </div>
+      <div id="xhsToolbar" class="xhs-toolbar">
+        <span style="font-weight:600;font-size:12px;">小红书排版</span>
+        <select id="xhsRatio" onchange="updateXhsPreview()">
+          <option value="3:4" selected>3:4 (1080×1440)</option>
+        </select>
+        <span id="xhsPageCount" class="xhs-page-count"></span>
+        <div style="flex:1"></div>
+        <button id="downloadAllBtn" onclick="downloadAllXhsPages()" title="打包下载全部页面">📦 下载全部 ZIP</button>
+      </div>
+      <div id="preview-scroll">
+        <div id="wenyan"></div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Dimension Switcher -->
+    <div id="rightPanel" class="right-panel">
+      <div id="dimPanelContent"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== STATE ==========
+const state = {
+  currentTheme: 'default',
+  dimensions: {},  // { dimKey: themeName } — only set when overridden
+  mode: 'whole',   // 'whole' or 'mix'
+};
+
+// ========== DATA (injected by build) ==========
+let THEMES = {};
+let DIM_CSS = {};
+let MANIFEST = null;
+
+// ========== INIT ==========
+async function init() {
+  // Load data
+  const [themesResp, dimsResp, manifestResp] = await Promise.all([
+    fetch('themes.json'),
+    fetch('dimensions.json'),
+    fetch('manifest.json'),
+  ]);
+  THEMES = await themesResp.json();
+  DIM_CSS = await dimsResp.json();
+  MANIFEST = await manifestResp.json();
+
+  // Populate theme select
+  const select = document.getElementById('themeSelect');
+  MANIFEST.themes.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = t.name;
+    select.appendChild(opt);
+  });
+  select.value = 'default';
+
+  // Populate dimension panel
+  buildDimPanel();
+
+  // Apply initial theme
+  applyTheme('default');
+
+  // Setup events
+  setupEvents();
+
+  // Load saved state
+  loadState();
+
+  // Load sample content
+  if (!document.getElementById('editor').value) {
+    document.getElementById('editor').value = SAMPLE_MD;
+    renderMarkdown();
+  }
+}
+
+// ========== THEME APPLICATION ==========
+let themeStyleEl = null;
+
+function applyTheme(themeName) {
+  state.currentTheme = themeName;
+
+  if (!themeStyleEl) {
+    themeStyleEl = document.createElement('style');
+    themeStyleEl.id = 'theme-css';
+    document.head.appendChild(themeStyleEl);
+  }
+
+  // In whole mode: apply full theme CSS
+  if (state.mode === 'whole' && THEMES[themeName]) {
+    themeStyleEl.textContent = THEMES[themeName];
+  } else if (state.mode === 'mix') {
+    applyMixedTheme();
+  }
+
+  // Update XHS preview if active
+  if (xhsMode) generateXhsPages();
+}
+
+function applyMixedTheme() {
+  let css = '';
+
+  // Start with base theme (default) as fallback for un-overridden dimensions
+  const baseCss = THEMES['default'] || '';
+
+  // Parse base CSS into dimension blocks
+  const baseByDim = {};
+  for (const [dimKey, themeMap] of Object.entries(DIM_CSS)) {
+    baseByDim[dimKey] = themeMap['default'] || '';
+  }
+
+  // For each dimension, use the override if set, otherwise use default
+  for (const dim of MANIFEST.dimensions) {
+    const overrideTheme = state.dimensions[dim.id];
+    const sourceTheme = overrideTheme || 'default';
+    const dimCss = DIM_CSS[dim.id]?.[sourceTheme] || baseByDim[dim.id] || '';
+    css += dimCss + '\n';
+  }
+
+  themeStyleEl.textContent = css;
+}
+
+// ========== DIMENSION PANEL ==========
+function buildDimPanel() {
+  const container = document.getElementById('dimPanelContent');
+  container.innerHTML = '';
+
+  // Whole theme section
+  const wholeSection = document.createElement('div');
+  wholeSection.className = 'panel-section';
+  wholeSection.innerHTML = `
+    <div class="panel-section-header" onclick="toggleSection(this)">
+      <span>🎨 整体主题</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="panel-section-body">
+      <div class="dim-item">
+        <select id="panelThemeSelect" class="dim-select" style="width:100%" onchange="switchWholeTheme(this.value)">
+          ${MANIFEST.themes.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+        </select>
+      </div>
+      <div style="font-size:11px;color:#999;margin-top:4px">选择主题将重置所有单独设置</div>
+    </div>
+  `;
+  container.appendChild(wholeSection);
+
+  // Element dimensions section
+  const dimSection = document.createElement('div');
+  dimSection.className = 'panel-section';
+  dimSection.innerHTML = `
+    <div class="panel-section-header" onclick="toggleSection(this)">
+      <span>🔧 元素级风格</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="panel-section-body" id="dimControls"></div>
+  `;
+  container.appendChild(dimSection);
+
+  const controls = document.getElementById('dimControls');
+  const dimThemesHtml = '<option value="">跟随整体</option>' + MANIFEST.themes.map(th => `<option value="${th.id}">${th.name}</option>`).join('');
+
+  MANIFEST.dimensions.forEach(dim => {
+    const div = document.createElement('div');
+    div.className = 'dim-item';
+    div.innerHTML = `
+      <span class="dim-label" title="${dim.id}">${dim.icon} ${dim.name}</span>
+      <select class="dim-select" data-dim="${dim.id}" onchange="switchDimension('${dim.id}', this.value)">
+        ${dimThemesHtml}
+      </select>
+    `;
+    controls.appendChild(div);
+  });
+
+  // Reset button
+  const resetDiv = document.createElement('div');
+  resetDiv.style.cssText = 'margin-top:12px;text-align:center';
+  resetDiv.innerHTML = `<button class="btn" onclick="resetAllDimensions()" style="font-size:12px;padding:4px 12px">↺ 重置所有单独设置</button>`;
+  controls.appendChild(resetDiv);
+}
+
+function toggleSection(header) {
+  header.classList.toggle('collapsed');
+}
+
+// ========== DIMENSION SWITCHING ==========
+function switchWholeTheme(themeName) {
+  state.mode = 'whole';
+  state.dimensions = {};
+  applyTheme(themeName);
+
+  // Sync UI
+  document.getElementById('themeSelect').value = themeName;
+  document.getElementById('panelThemeSelect').value = themeName;
+
+  // Reset all dimension selects
+  document.querySelectorAll('#dimControls .dim-select').forEach(s => s.value = '');
+  saveState();
+}
+
+function switchDimension(dimId, themeName) {
+  if (!themeName) {
+    delete state.dimensions[dimId];
+  } else {
+    state.dimensions[dimId] = themeName;
+  }
+
+  // Switch to mix mode if any dimension is overridden
+  const hasOverride = Object.keys(state.dimensions).length > 0;
+  state.mode = hasOverride ? 'mix' : 'whole';
+
+  if (state.mode === 'whole') {
+    applyTheme(state.currentTheme);
+  } else {
+    applyMixedTheme();
+  }
+  saveState();
+}
+
+function resetAllDimensions() {
+  state.dimensions = {};
+  state.mode = 'whole';
+  applyTheme(state.currentTheme);
+
+  document.querySelectorAll('#dimControls .dim-select').forEach(s => s.value = '');
+  saveState();
+}
+
+// ========== MARKDOWN RENDERING ==========
+function renderMarkdown() {
+  const editor = document.getElementById('editor');
+  const preview = document.getElementById('wenyan');
+  const text = editor.value;
+
+  // Parse front matter
+  const { frontMatter, content: md } = parseFrontMatter(text);
+
+  // Preserve extra blank lines: 3+ consecutive \n → paragraph break + markers
+  // e.g. "text\n\n\n\ntext" (2 blank lines) → "text\n\n%EL%\n\n%EL%\ntext"
+  const EL = '%EL%';
+  const processedMd = md.replace(/\n{3,}/g, (m) => {
+    const extraLines = m.length - 2; // number of visible blank lines beyond the paragraph break
+    return '\n\n' + (EL + '\n\n').repeat(extraLines);
+  });
+
+  // Render
+  let htmlContent = normalizeImageUrls(marked.parse(processedMd));
+
+  // Restore empty lines: <p>%EL%</p> → empty paragraph
+  htmlContent = htmlContent.replace(
+    /<p[^>]*>\s*%EL%\s*<\/p>/gi,
+    '<p style="margin:0;padding:0;height:1.2em;">&nbsp;</p>'
+  );
+
+  preview.innerHTML = htmlContent;
+
+  // Update char count
+  const count = text.replace(/\s/g, '').length;
+  document.getElementById('charCount').textContent = count + ' 字';
+  
+  // 实时检测图片方向并应用样式
+  detectAndApplyImageStyles(preview);
+
+  // Update XHS preview if active
+  if (xhsMode) generateXhsPages();
+}
+
+// 实时检测图片方向并应用对应样式
+function detectAndApplyImageStyles(container) {
+  const imgs = container.querySelectorAll('img');
+  console.log('实时检测图片方向，数量:', imgs.length);
+  
+  imgs.forEach((img, idx) => {
+    // 如果已经有 class，跳过
+    if (img.classList.contains('landscape') || img.classList.contains('portrait')) {
+      return;
+    }
+    
+    if (img.complete && img.naturalWidth > 0) {
+      applyImageOrientationStyle(img);
+    } else {
+      img.addEventListener('load', () => {
+        console.log(`图片 ${idx} 加载完成:`, img.naturalWidth, 'x', img.naturalHeight);
+        applyImageOrientationStyle(img);
+      });
+      img.addEventListener('error', () => {
+        img.classList.add('landscape');
+      });
+    }
+  });
+  // 移除递归调用，避免重复检测
+}
+
+// 根据图片方向应用对应样式
+function applyImageOrientationStyle(img) {
+  // 检查是否已有方向 class
+  if (img.classList.contains('landscape') || img.classList.contains('portrait')) {
+    return;
+  }
+  
+  const isLandscape = img.naturalWidth > img.naturalHeight;
+  img.classList.add(isLandscape ? 'landscape' : 'portrait');
+  console.log('应用图片方向:', img.src?.slice(-30), isLandscape ? '横版' : '竖版');
+  
+  // 应用分页时的缩放（如果标记了 scaledHeight）
+  if (img.dataset.scaledHeight) {
+    const scaledH = parseInt(img.dataset.scaledHeight, 10);
+    img.style.height = scaledH + 'px';
+    img.style.objectFit = 'contain';
+    console.log('应用缩放高度:', scaledH);
+  }
+}
+
+
+// ========== PHONE PREVIEW ==========
+let phoneMode = false;
+
+function togglePhonePreview() {
+  phoneMode = !phoneMode;
+  const scroll = document.getElementById('preview-scroll');
+  const wenyan = document.getElementById('wenyan');
+  const btn = document.querySelector('.phone-toggle');
+
+  if (phoneMode) {
+    const frame = document.createElement('div');
+    frame.className = 'phone-frame';
+    frame.id = 'phone-frame';
+    frame.innerHTML = `
+      <div class="phone-notch"></div>
+      <div class="phone-status-bar">
+        <span>09:41</span>
+        <span>📶 🔋</span>
+      </div>
+      <div class="phone-content"></div>
+    `;
+    const phoneContent = frame.querySelector('.phone-content');
+    phoneContent.appendChild(wenyan);
+    scroll.innerHTML = '';
+    scroll.appendChild(frame);
+    scroll.classList.add('phone-mode');
+    btn.classList.add('active');
+    wenyan.style.maxWidth = '100%';
+    wenyan.style.margin = '0';
+  } else {
+    const frame = document.getElementById('phone-frame');
+    if (frame) {
+      const phoneContent = frame.querySelector('.phone-content');
+      phoneContent.removeChild(wenyan);
+      scroll.innerHTML = '';
+      scroll.appendChild(wenyan);
+    }
+    scroll.classList.remove('phone-mode');
+    btn.classList.remove('active');
+    wenyan.style.maxWidth = '';
+    wenyan.style.margin = '';
+  }
+
+  applyTheme(state.currentTheme);
+}
+
+// ========== XHS PREVIEW MODE ==========
+let xhsMode = false;
+let xhsPages = []; // Array of HTML strings, one per page
+
+const XHS_DIMENSIONS = {
+  '3:4': { width: 1080, height: 1440 },
+};
+
+function getXhsScaleCss(pageWidth) {
+  const s = pageWidth / 432; // 2.5 for 1080px — comfortable mobile reading
+  return `
+    :where(#wenyan) { font-size: ${Math.round(17*s)}px !important; line-height: 1.65 !important; }
+    :where(#wenyan) h1 { font-size: ${Math.round(28*s)}px !important; font-weight: 700 !important; margin-top: ${Math.round(10*s)}px !important; margin-bottom: ${Math.round(8*s)}px !important; }
+    :where(#wenyan) h2 { font-size: ${Math.round(23*s)}px !important; font-weight: 700 !important; }
+    :where(#wenyan) h3 { font-size: ${Math.round(20*s)}px !important; font-weight: 600 !important; }
+    :where(#wenyan) p { margin: ${Math.round(12*s)}px 0 !important; }
+    :where(#wenyan) img { width: 100% !important; height: auto !important; margin: ${Math.round(8*s)}px auto !important; }
+    :where(#wenyan) pre { font-size: ${Math.round(15*s)}px !important; padding: ${Math.round(12*s)}px !important; margin: ${Math.round(8*s)}px 0 !important; }
+    :where(#wenyan) code { font-size: ${Math.round(15*s)}px !important; }
+    :where(#wenyan) blockquote { padding: ${Math.round(8*s)}px ${Math.round(12*s)}px !important; border-left: ${Math.round(4*s)}px solid !important; margin: ${Math.round(16*s)}px 0 !important; }
+    :where(#wenyan) ul, :where(#wenyan) ol { margin: ${Math.round(12*s)}px 0 !important; padding-left: ${Math.round(24*s)}px !important; }
+    :where(#wenyan) li { margin: ${Math.round(8*s)}px 0 !important; }
+    :where(#wenyan) table { font-size: ${Math.round(15*s)}px !important; margin: ${Math.round(8*s)}px auto !important; }
+    :where(#wenyan) hr { margin: ${Math.round(10*s)}px 0 !important; }
+    :where(#wenyan) th, :where(#wenyan) td { padding: ${Math.round(10*s)}px !important; }
+    :where(#wenyan)::after { margin-top: ${Math.round(8*s)}px !important; height: 30px !important; }
+  `;
+}
+
+
+
+function xhsDoubleBgSize(container) {
+  // Double the background tile size for mobile comfort
+  const cs = getComputedStyle(container);
+  const bgImage = cs.backgroundImage;
+  if (!bgImage || bgImage === 'none') return;
+
+  const bgSize = cs.backgroundSize;
+  if (bgSize && bgSize !== 'auto' && bgSize !== 'initial') {
+    // Parse explicit background-size and double pixel values
+    const newParts = bgSize.split(/\s+/).map(p => {
+      if (p.endsWith('px')) return (parseFloat(p) * 2) + 'px';
+      if (p.endsWith('%')) return Math.min(parseFloat(p) * 2, 400) + '%';
+      return p;
+    });
+    container.style.backgroundSize = newParts.join(' ');
+  } else {
+    // No explicit size — SVG intrinsic. Detect from data URL dimensions.
+    const match = bgImage.match(/width='(\d+)'\s+height='(\d+)'/);
+    if (match) {
+      const w = parseInt(match[1]) * 2;
+      const h = parseInt(match[2]) * 2;
+      container.style.backgroundSize = w + 'px ' + h + 'px';
+    }
+  }
+}
+
+/* --- UI Controls --- */
+
+function toggleXhsMode() {
+  if (phoneMode) togglePhonePreview();
+  xhsMode = !xhsMode;
+  const scroll = document.getElementById('preview-scroll');
+  const btn = document.querySelector('.xhs-toggle');
+  const toolbar = document.getElementById('xhsToolbar');
+
+  if (xhsMode) {
+    btn.classList.add('active');
+    toolbar.classList.add('visible');
+    scroll.classList.add('xhs-mode');
+    generateXhsPages();
+  } else {
+    btn.classList.remove('active');
+    toolbar.classList.remove('visible');
+    scroll.classList.remove('xhs-mode');
+    scroll.innerHTML = '<div id="wenyan"></div>';
+    renderMarkdown();
+  }
+}
+
+function getXhsDimensions() {
+  const ratio = document.getElementById('xhsRatio').value;
+  return XHS_DIMENSIONS[ratio] || XHS_DIMENSIONS['3:4'];
+}
+
+function normalizeImageUrls(html) {
+  // For URLs with ! suffix (like xxx.png!2.webp), strip for preview but store original in data-orig-url
+  let result = html.replace(
+    /src="([^"]*?\.(?:png|jpg|jpeg|gif|bmp|svg|webp|tiff|ico))!([^"]*?)"/gi,
+    (match, baseUrl, suffix) => {
+      const fullOrigUrl = baseUrl + '!' + suffix;
+      if (/^https?:\/\//i.test(baseUrl)) {
+        return `src="/api/proxy-image?url=${encodeURIComponent(baseUrl)}" data-orig-url="${fullOrigUrl}"`;
+      }
+      return `src="${baseUrl}" data-orig-url="${fullOrigUrl}"`;
+    }
+  );
+// Proxy remaining external URLs (those without ! suffix)
+  result = result.replace(
+    /src="(https?:\/\/[^\"]+\.(?:png|jpg|jpeg|gif|webp|bmp|svg))"/gi,
+    (match, url) => `src="/api/proxy-image?url=${encodeURIComponent(url)}" data-orig-url="${url}"`
+  );
+  return result;
+}
+
+function updateXhsPreview() {
+  if (xhsMode) generateXhsPages();
+}
+
+/* --- Main Generator --- */
+
+async function generateXhsPages() {
+  const scroll = document.getElementById('preview-scroll');
+  const editor = document.getElementById('editor');
+  const md = editor.value;
+
+  // Parse markdown → HTML
+  const { content: cleanMd } = parseFrontMatter(md);
+  const htmlContent = normalizeImageUrls(marked.parse(cleanMd));
+
+  // Theme CSS
+  const themeCss = state.mode === 'whole'
+    ? (THEMES[state.currentTheme] || '')
+    : buildMixedCss();
+
+  const dims = getXhsDimensions();
+  const { width, height } = dims;
+
+  // Split into pages
+  xhsPages = await splitContentIntoPages(htmlContent, themeCss, width, height);
+
+  // Render preview cards
+  scroll.innerHTML = '';
+
+  if (xhsPages.length === 0) {
+    scroll.innerHTML = '<div class="xhs-empty">没有内容可排版</div>';
+    document.getElementById('xhsPageCount').textContent = '';
+    return;
+  }
+
+  const scale = 270 / width; // Preview scale: 1080 → 270
+
+  xhsPages.forEach((pageHtml, i) => {
+    const card = document.createElement('div');
+    card.className = 'xhs-page-card';
+
+    const frame = document.createElement('div');
+    frame.className = 'xhs-page-frame';
+
+    const content = document.createElement('div');
+    content.className = 'xhs-page-content';
+    content.style.width = width + 'px';
+    content.style.height = height + 'px';
+    content.style.transform = `scale(${scale})`;
+    content.style.transformOrigin = 'top left';
+    content.style.overflow = 'hidden';
+
+    const styleEl = document.createElement('style');
+    styleEl.textContent = themeCss + getXhsScaleCss(width);
+    content.appendChild(styleEl);
+
+    const padding = Math.round(width * 0.055);
+    const wenyanDiv = document.createElement('div');
+    wenyanDiv.id = 'wenyan';
+    wenyanDiv.style.cssText = `max-width:${width}px;margin:0 auto;padding:${padding}px;box-sizing:border-box;`;
+    wenyanDiv.innerHTML = pageHtml;
+    content.appendChild(wenyanDiv);
+
+    // Double background grid spacing for mobile comfort
+    requestAnimationFrame(() => xhsDoubleBgSize(wenyanDiv));
+
+    frame.appendChild(content);
+    card.appendChild(frame);
+
+    const info = document.createElement('div');
+    info.className = 'xhs-page-info';
+    info.innerHTML = `
+      <span class="xhs-page-num">第 ${i + 1} / ${xhsPages.length} 页</span>
+      <button class="xhs-dl-btn" onclick="downloadXhsPage(${i})" title="下载此页 PNG">💾 下载</button>
+    `;
+    card.appendChild(info);
+    scroll.appendChild(card);
+  });
+
+  document.getElementById('xhsPageCount').textContent =
+    `${xhsPages.length} 页 · ${width}×${height}`;
+}
+
+/* --- Page Splitting (core algorithm) --- */
+
+async function splitContentIntoPages(htmlContent, themeCss, pageWidth, pageHeight) {
+  const PADDING = Math.round(pageWidth * 0.055);
+  const USABLE_H = pageHeight - PADDING * 2;
+
+  // Create hidden measurement container at FULL design width
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${pageWidth}px;visibility:hidden;pointer-events:none;z-index:-1;`;
+
+  const styleEl = document.createElement('style');
+  styleEl.textContent = themeCss + getXhsScaleCss(pageWidth) + `
+    #wenyan img { max-width:100% !important; height:auto !important; display:block !important; }
+    #wenyan pre { white-space:pre-wrap !important; word-break:break-all !important; }
+    #wenyan table { width:100% !important; table-layout:fixed !important; word-break:break-all !important; }
+  `;
+  wrapper.appendChild(styleEl);
+
+  const measureDiv = document.createElement('div');
+  measureDiv.id = 'xhs-m';
+  // Wrap in #wenyan so theme CSS + scaleCss selectors target it correctly
+  measureDiv.innerHTML = `<div id="wenyan" style="max-width:${pageWidth}px;margin:0 auto;padding:${PADDING}px;box-sizing:border-box;">${htmlContent}</div>`;
+  wrapper.appendChild(measureDiv);
+  document.body.appendChild(wrapper);
+
+  const wenyanInner = measureDiv.querySelector('#wenyan');
+
+  // Wait for ALL images to load
+  const imgs = wenyanInner.querySelectorAll('img');
+  await Promise.all(Array.from(imgs).map(img => {
+    if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+    return new Promise(r => { img.onload = r; img.onerror = r; setTimeout(r, 5000); });
+  }));
+
+  const blocks = Array.from(wenyanInner.children);
+  const pages = smartSplit(blocks, pageWidth, USABLE_H, PADDING, wenyanInner);
+
+  document.body.removeChild(wrapper);
+  return pages;
+}
+
+/**
+ * Smart splitting algorithm:
+ * - Images that don't fit: scale to fit remaining space, or push to next page
+ * - Text blocks that don't fit: push to next page, or split if page is empty
+ * - Other blocks that don't fit: push to next page
+ */
+/**
+ * Smart splitting — uses scrollHeight for accurate margin-collapsed measurement.
+ * - Images: scale to fit, or push to next page
+ * - Text: push to next page, or split if on empty page
+ */
+function smartSplit(blocks, pageWidth, usableH, padding, measureEl) {
+  const pages = [];
+  let pageHtml = []; // HTML strings for current page
+
+  // Create a test element for measuring cumulative page height
+  // Must match #wenyan styling exactly (same max-width, padding, box-sizing)
+  const testEl = document.createElement('div');
+  testEl.id = 'wenyan'; // Must match #wenyan so theme CSS + scaleCss apply correctly
+  testEl.style.cssText = `position:absolute;left:-9999px;top:0;width:${pageWidth}px;visibility:hidden;pointer-events:none;max-width:${pageWidth}px;margin:0 auto;padding:${padding}px;box-sizing:border-box;`;
+  measureEl.parentNode.appendChild(testEl);
+
+  const PAGE_H = usableH + padding * 2; // = pageHeight (e.g. 1440)
+
+  function measurePage() {
+    testEl.innerHTML = pageHtml.join('\n');
+    return testEl.scrollHeight;
+  }
+
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+    const blockHtml = block.outerHTML;
+
+    // Try adding this block to current page
+    pageHtml.push(blockHtml);
+    const h = measurePage();
+
+    if (h <= PAGE_H) {
+      // Fits — keep it
+      continue;
+    }
+
+    // Doesn't fit — remove and handle
+    pageHtml.pop();
+
+    if (pageHtml.length === 0) {
+      // Empty page — this oversized block must go here somehow
+      if (isImageBlock(block)) {
+        pageHtml.push(scaleBlockToFit(block, usableH, pageWidth, padding));
+      } else {
+        const parts = splitBlock(block, usableH, pageWidth, padding, measureEl);
+        if (parts) {
+          pageHtml.push(parts[0]);
+          pages.push(pageHtml.join('\n'));
+          pageHtml = [parts[1]];
+        } else {
+          // Can't split — show as-is (clipped by overflow:hidden)
+          pageHtml.push(blockHtml);
+        }
+      }
+    } else {
+      // Page has content — start new page
+      pages.push(pageHtml.join('\n'));
+      pageHtml = [blockHtml];
+    }
+  }
+
+  testEl.parentNode.removeChild(testEl);
+
+  if (pageHtml.length > 0) {
+    pages.push(pageHtml.join('\n'));
+  }
+
+  return pages;
+}
+
+/* --- Image Handling --- */
+
+function isImageBlock(block) {
+  const tag = block.tagName.toLowerCase();
+  if (tag === 'img') return true;
+  if ((tag === 'p' || tag === 'div') && block.querySelector('img')) {
+    const textOnly = block.textContent.replace(/\s/g, '');
+    return textOnly.length < 10;
+  }
+  return false;
+}
+
+function scaleBlockToFit(block, maxH, pageWidth, padding) {
+  const clone = block.cloneNode(true);
+  const img = clone.tagName === 'img' ? clone : clone.querySelector('img');
+  if (!img) return block.outerHTML;
+
+  const natW = img.naturalWidth || parseInt(img.getAttribute('width')) || pageWidth;
+  const natH = img.naturalHeight || parseInt(img.getAttribute('height')) || maxH;
+
+  const availW = pageWidth - padding * 2;
+  const scaleW = availW / natW;
+  const scaleH = maxH / natH;
+  const s = Math.min(scaleW, scaleH, 1);
+
+  const newW = Math.round(natW * s);
+  const newH = Math.round(natH * s);
+
+  img.style.setProperty('width', newW + 'px', 'important');
+  img.style.setProperty('height', newH + 'px', 'important');
+  img.style.setProperty('maxWidth', 'none', 'important');
+
+  if (clone.tagName !== 'img') {
+    clone.style.setProperty('height', newH + 'px', 'important');
+    clone.style.setProperty('textAlign', 'center', 'important');
+  }
+
+  return clone.outerHTML;
+}
+
+/* --- Text Splitting --- */
+
+function splitBlock(block, maxH, pageWidth, padding, measureEl) {
+  // Step 1: Try splitting at child node boundaries
+  const origChildren = Array.from(block.childNodes);
+
+  if (origChildren.length > 1) {
+    for (let splitAt = origChildren.length - 1; splitAt > 0; splitAt--) {
+      const testBlock = block.cloneNode(true);
+      while (testBlock.childNodes.length > splitAt) {
+        testBlock.removeChild(testBlock.lastChild);
+      }
+
+      const testWrap = document.createElement('div');
+      testWrap.appendChild(testBlock);
+      measureEl.appendChild(testWrap);
+      const h = testWrap.offsetHeight;
+      measureEl.removeChild(testWrap);
+
+      if (h <= maxH) {
+        const part1 = block.cloneNode(true);
+        while (part1.childNodes.length > splitAt) {
+          part1.removeChild(part1.lastChild);
+        }
+
+        const part2 = block.cloneNode(true);
+        for (let j = 0; j < splitAt; j++) {
+          part2.removeChild(part2.firstChild);
+        }
+
+        if (part1.textContent.trim() && part2.textContent.trim()) {
+          return [part1.outerHTML, part2.outerHTML];
+        }
+      }
+    }
+  }
+
+  // Step 2: Single text node — binary search on text length
+  if (origChildren.length === 1 && origChildren[0].nodeType === Node.TEXT_NODE) {
+    const text = origChildren[0].nodeValue;
+    if (text.length <= 10) return null;
+
+    let lo = 0, hi = text.length;
+    let bestLen = 0;
+
+    while (lo <= hi) {
+      const mid = Math.floor((lo + hi) / 2);
+      const testBlock = block.cloneNode(true);
+      testBlock.textContent = text.substring(0, mid);
+
+      const testWrap = document.createElement('div');
+      testWrap.appendChild(testBlock);
+      measureEl.appendChild(testWrap);
+      const h = testWrap.offsetHeight;
+      measureEl.removeChild(testWrap);
+
+      if (h <= maxH) {
+        bestLen = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+
+    if (bestLen > 0 && bestLen < text.length) {
+      let breakAt = bestLen;
+      const search = Math.min(30, bestLen);
+      for (let j = bestLen; j > bestLen - search; j--) {
+        if (' ，。！？、；：\n'.includes(text[j])) {
+          breakAt = j + 1;
+          break;
+        }
+      }
+
+      const tag = block.tagName.toLowerCase();
+      const attrs = Array.from(block.attributes).map(a => `${a.name}="${a.value}"`).join(' ');
+      return [
+        `<${tag}${attrs ? ' ' + attrs : ''}>${xhsEscHtml(text.substring(0, breakAt))}</${tag}>`,
+        `<${tag}${attrs ? ' ' + attrs : ''}>${xhsEscHtml(text.substring(breakAt))}</${tag}>`
+      ];
+    }
+  }
+
+  return null;
+}
+
+function xhsEscHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/* --- Download (using html2canvas) --- */
+
+// ========== 公共工具函数 ==========
+function parseFrontMatter(text) {
+  const match = text.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  if (match) {
+    return { frontMatter: match[1], content: match[2] };
+  }
+  return { frontMatter: '', content: text };
+}
+
+async function waitForImages(container) {
+  const imgs = Array.from(container.querySelectorAll('img'));
+  if (imgs.length > 0) {
+    await Promise.all(imgs.map(img => {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise(resolve => {
+        img.onload = () => setTimeout(resolve, 50);
+        img.onerror = () => setTimeout(resolve, 50);
+        setTimeout(resolve, 5000);
+      });
+    }));
+    await new Promise(r => setTimeout(r, 100));
+  }
+  return imgs;
+}
+
+// ========== XHS DOWNLOAD ==========
+async function downloadXhsPage(pageIndex) {
+  const dims = getXhsDimensions();
+  const scroll = document.getElementById('preview-scroll');
+  const cards = scroll.querySelectorAll('.xhs-page-card');
+  if (!cards[pageIndex]) return;
+
+  const btn = cards[pageIndex].querySelector('.xhs-dl-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 生成中...';
+
+  try {
+    const contentEl = cards[pageIndex].querySelector('.xhs-page-content');
+    const wenyanDiv = contentEl.querySelector('#wenyan');
+
+    // Wait for images
+    const imgs = await waitForImages(wenyanDiv);
+
+    // 直接截取预览框中的元素，确保与预览完全一致
+    // 复用已有的 imgs，将图片转为 base64 避免缓存
+    const base64Imgs = [];
+    
+    for (let idx = 0; idx < imgs.length; idx++) {
+      const img = imgs[idx];
+      try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        ctx.drawImage(img, 0, 0);
+        base64Imgs[idx] = canvas.toDataURL('image/png');
+      } catch(e) {
+        base64Imgs[idx] = img.src;
+      }
+    }
+    
+    // 替换为 base64
+    imgs.forEach((img, idx) => {
+      if (base64Imgs[idx]) img.src = base64Imgs[idx];
+    });
+    
+    await new Promise(r => setTimeout(r, 100));
+    
+    // 直接截取原始元素（保持预览的完整样式）
+    const dataUrl = await htmlToImage.toPng(wenyanDiv, {
+      pixelRatio: 1,
+      cacheBust: true,
+      bgcolor: '#ffffff',
+    });
+    
+    const link = document.createElement('a');
+    link.download = `page-${pageIndex + 1}-${Date.now()}.png`;
+    link.href = dataUrl;
+    link.click();
+  } catch (e) {
+    console.error('XHS download error:', e);
+    alert('下载失败: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 下载';
+  }
+}
+
+async function downloadAllXhsPages() {
+  if (xhsPages.length === 0) return;
+
+  const dims = getXhsDimensions();
+  const scroll = document.getElementById('preview-scroll');
+  const cards = scroll.querySelectorAll('.xhs-page-card');
+
+  const dlBtn = document.getElementById('downloadAllBtn');
+  const origText = dlBtn.textContent;
+  dlBtn.disabled = true;
+  dlBtn.textContent = '⏳ 生成中...';
+
+  try {
+    const zip = new JSZip();
+
+    for (let i = 0; i < cards.length; i++) {
+      dlBtn.textContent = `⏳ ${i + 1}/${cards.length}...`;
+
+      const contentEl = cards[i].querySelector('.xhs-page-content');
+      const wenyanDiv = contentEl.querySelector('#wenyan');
+
+      // Wait for images
+      const imgs = await waitForImages(wenyanDiv);
+
+      // 直接使用预览框中的元素截图（与单页下载一致）
+      // 先将图片转为 base64 避免缓存
+      const base64Imgs = [];
+      
+      for (let idx = 0; idx < imgs.length; idx++) {
+        const img = imgs[idx];
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = img.naturalWidth || img.width;
+          canvas.height = img.naturalHeight || img.height;
+          ctx.drawImage(img, 0, 0);
+          base64Imgs[idx] = canvas.toDataURL('image/png');
+        } catch (e) {
+          base64Imgs[idx] = img.src;
+        }
+      }
+      
+      // 替换为 base64
+      imgs.forEach((img, idx) => {
+        if (base64Imgs[idx]) {
+          img.src = base64Imgs[idx];
+        }
+      });
+      
+      await new Promise(r => setTimeout(r, 100));
+      
+      // 直接截图（保持预览的完整样式）
+      const dataUrl = await htmlToImage.toPng(wenyanDiv, {
+        pixelRatio: 1,
+        cacheBust: true,
+        bgcolor: '#ffffff',
+      });
+      
+      // 去掉 data:image/png;base64, 前缀再存入 zip
+      zip.file(`page-${i + 1}.png`, dataUrl.split(',')[1], { base64: true });
+    }
+
+    dlBtn.textContent = '📦 打包中...';
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    const link = document.createElement('a');
+    link.download = `pages-${Date.now()}.zip`;
+    link.href = URL.createObjectURL(zipBlob);
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  } catch (e) {
+    console.error('XHS batch download error:', e);
+    alert('批量下载失败: ' + e.message);
+  } finally {
+    dlBtn.disabled = false;
+    dlBtn.textContent = origText;
+  }
+}
+
+// ========== TOOLBAR ACTIONS ==========
+function toolbarAction(action) {
+  const editor = document.getElementById('editor');
+  const start = editor.selectionStart;
+  const end = editor.selectionEnd;
+  const selected = editor.value.substring(start, end);
+  const before = editor.value.substring(0, start);
+  const after = editor.value.substring(end);
+
+  let insert = '';
+  let cursorOffset = 0;
+
+  switch (action) {
+    case 'bold':
+      insert = `**${selected || '粗体文字'}**`;
+      cursorOffset = selected ? insert.length : 2;
+      break;
+    case 'italic':
+      insert = `*${selected || '斜体文字'}*`;
+      cursorOffset = selected ? insert.length : 1;
+      break;
+    case 'strikethrough':
+      insert = `~~${selected || '删除线'}~~`;
+      cursorOffset = selected ? insert.length : 2;
+      break;
+    case 'h1':
+      insert = `\n# ${selected || '标题'}`;
+      cursorOffset = insert.length;
+      break;
+    case 'h2':
+      insert = `\n## ${selected || '标题'}`;
+      cursorOffset = insert.length;
+      break;
+    case 'h3':
+      insert = `\n### ${selected || '标题'}`;
+      cursorOffset = insert.length;
+      break;
+    case 'ul':
+      insert = `\n- ${selected || '列表项'}`;
+      cursorOffset = insert.length;
+      break;
+    case 'ol':
+      insert = `\n1. ${selected || '列表项'}`;
+      cursorOffset = insert.length;
+      break;
+    case 'checklist':
+      insert = `\n- [ ] ${selected || '待办事项'}`;
+      cursorOffset = insert.length;
+      break;
+    case 'quote':
+      insert = `\n> ${selected || '引用文字'}`;
+      cursorOffset = insert.length;
+      break;
+    case 'code':
+      insert = `\`${selected || 'code'}\``;
+      cursorOffset = selected ? insert.length : 1;
+      break;
+    case 'codeblock':
+      insert = `\n\`\`\`\n${selected || '代码'}\n\`\`\`\n`;
+      cursorOffset = selected ? insert.length : 4;
+      break;
+    case 'link':
+      insert = `[${selected || '链接文字'}](url)`;
+      cursorOffset = selected ? insert.length - 4 : 1;
+      break;
+    case 'image':
+      insert = `![${selected || '图片描述'}](url)`;
+      cursorOffset = selected ? insert.length - 4 : 2;
+      break;
+    case 'table':
+      insert = `\n| 列1 | 列2 | 列3 |\n|------|------|------|\n| 内容 | 内容 | 内容 |\n`;
+      cursorOffset = insert.length;
+      break;
+    case 'hr':
+      insert = `\n---\n`;
+      cursorOffset = insert.length;
+      break;
+  }
+
+  editor.value = before + insert + after;
+  editor.focus();
+  editor.selectionStart = start + cursorOffset;
+  editor.selectionEnd = start + cursorOffset;
+  renderMarkdown();
+}
+
+// ========== COPY HTML (v2: inline all styles + pseudo-elements) ==========
+function copyHtml() {
+  const wenyan = document.getElementById('wenyan');
+  const themeCss = state.mode === 'whole'
+    ? (THEMES[state.currentTheme] || '')
+    : buildMixedCss();
+
+  // 1. Clone the wenyan element for manipulation (don't touch the live DOM)
+  const clone = wenyan.cloneNode(true);
+
+  // 2. Inline computed styles from live elements → clone elements
+  const liveEls = [wenyan, ...wenyan.querySelectorAll('*')];
+  const cloneEls = [clone, ...clone.querySelectorAll('*')];
+
+  const copyProps = [
+    'color', 'font-size', 'font-weight', 'font-style', 'font-family',
+    'letter-spacing', 'text-align', 'text-decoration', 'text-decoration-line',
+    'background-color', 'background-image', 'background-size', 'background-repeat',
+    'background-position', 'background-attachment',
+    'border', 'border-left', 'border-top', 'border-right', 'border-bottom',
+    'border-radius', 'border-color', 'border-left-color', 'border-style',
+    'box-shadow', 'opacity',
+    // NOTE: All padding/margin excluded — WeChat editor applies its own
+    // default spacing for list items, blockquotes, code blocks etc.
+    // 'margin-left', 'margin-right' removed to let WeChat handle indent.
+    'list-style-type', 'vertical-align',
+    // NOTE: display/width/height/overflow/line-height excluded —
+    // WeChat editor handles its own layout; inlining these causes text overlap.
+  ];
+
+  liveEls.forEach((liveEl, i) => {
+    const cloneEl = cloneEls[i];
+    if (!cloneEl) return;
+    try {
+      const computed = getComputedStyle(liveEl);
+      let s = cloneEl.getAttribute('style') || '';
+      if (s && !s.endsWith(';')) s += ';';
+      for (const prop of copyProps) {
+        const val = computed.getPropertyValue(prop);
+        if (val && val !== 'initial' && val !== 'unset' && val !== 'inherit') {
+          s += prop + ':' + val + ';';
+        }
+      }
+      cloneEl.setAttribute('style', s);
+    } catch(e) {}
+  });
+
+  // 3. Inject pseudo-elements (::before / ::after) as <span> elements
+  injectPseudoElements(clone, themeCss);
+
+  // 4. Restore original image URLs (normalizeImageUrls strips !2.webp suffix)
+  clone.querySelectorAll('img').forEach(img => {
+    const origUrl = img.getAttribute('data-orig-url');
+    if (origUrl) img.setAttribute('src', origUrl);
+  });
+
+  // 5. Extract #wenyan background/padding for the outer <section> wrapper
+  let bgInline = '';
+  const wenyanMatch = themeCss.match(/#wenyan\s*\{([^}]*)\}/);
+  if (wenyanMatch) {
+    const block = wenyanMatch[1];
+    const bgProps = ['background', 'background-color', 'background-image', 'background-size',
+                     'background-repeat', 'background-position', 'background-attachment', 'padding'];
+    for (const prop of bgProps) {
+      const re = new RegExp(prop + '\\s*:\\s*([^;]+);');
+      const m = block.match(re);
+      if (m) bgInline += prop + ':' + m[1].trim() + ';';
+    }
+  }
+
+  const fullHtml = `<section style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.75; font-size: 17px;${bgInline}">
+${clone.innerHTML}
+</section>`;
+
+  // 6. Copy to clipboard — try ClipboardItem first, fallback to execCommand
+  function showCopyOk() {
+    const btn = document.getElementById('copyBtn');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✓ 已复制';
+    btn.classList.add('active');
+    setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('active'); }, 2000);
+  }
+
+  function copyViaExecCommand() {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = fullHtml;
+    tmp.style.position = 'fixed';
+    tmp.style.left = '-9999px';
+    tmp.style.top = '0';
+    document.body.appendChild(tmp);
+    const range = document.createRange();
+    range.selectNodeContents(tmp);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch(e) {}
+    sel.removeAllRanges();
+    document.body.removeChild(tmp);
+    if (ok) showCopyOk();
+  }
+
+  try {
+    const blob = new Blob([fullHtml], { type: 'text/html' });
+    const item = new ClipboardItem({ 'text/html': blob, 'text/plain': new Blob([fullHtml], { type: 'text/plain' }) });
+    navigator.clipboard.write([item]).then(() => { showCopyOk(); }).catch(() => { copyViaExecCommand(); });
+  } catch(e) {
+    copyViaExecCommand();
+  }
+}
+
+// Inject ::before / ::after pseudo-elements as real <span> elements for clipboard copy
+function injectPseudoElements(clone, themeCss) {
+  const tempStyle = document.createElement('style');
+  tempStyle.textContent = themeCss;
+  document.head.appendChild(tempStyle);
+  try {
+    const sheet = tempStyle.sheet;
+    if (!sheet) return;
+    for (const rule of sheet.cssRules) {
+      if (!(rule instanceof CSSStyleRule)) continue;
+      const sel = rule.selectorText;
+      if (!sel) continue;
+
+      let pseudoType = null;
+      let realSel = sel;
+      if (sel.includes('::before'))      { pseudoType = 'before'; realSel = sel.replace(/::before/g, ''); }
+      else if (sel.includes('::after'))  { pseudoType = 'after';  realSel = sel.replace(/::after/g, ''); }
+      if (!pseudoType) continue;
+
+      // Strip #wenyan prefix → query within clone
+      realSel = realSel.replace(/#wenyan\s*/g, '').trim();
+      if (!realSel) realSel = '*';
+
+      try {
+        const elements = clone.querySelectorAll(realSel);
+        elements.forEach(el => {
+          // Avoid duplicates
+          if (el.querySelector('.pseudo-' + pseudoType)) return;
+
+          const contentVal = rule.style.getPropertyValue('content');
+          if (!contentVal || contentVal === 'normal' || contentVal === 'none') return;
+
+          const span = document.createElement('span');
+          span.className = 'pseudo-' + pseudoType;
+
+          // Build inline style: copy all props except position-related ones
+          let styleText = '';
+          for (let j = 0; j < rule.style.length; j++) {
+            const prop = rule.style[j];
+            if (prop === 'content') continue;
+            if (/^(position|top|left|right|bottom|z-index|transform|float|clear)$/i.test(prop)) continue;
+            styleText += prop + ':' + rule.style.getPropertyValue(prop) + ';';
+          }
+          span.style.cssText = styleText;
+
+          // Handle content: url(...) → <img>
+          const urlMatch = contentVal.match(/url\(["']?([^"')]+)["']?\)/);
+          if (urlMatch) {
+            const img = document.createElement('img');
+            img.src = urlMatch[1];
+            img.style.cssText = styleText;
+            span.appendChild(img);
+          } else {
+            // content: "text" → text node
+            const txt = contentVal.replace(/^["']|["']$/g, '');
+            span.textContent = txt;
+          }
+
+          if (pseudoType === 'before') el.insertBefore(span, el.firstChild);
+          else el.appendChild(span);
+        });
+      } catch(e) {}
+    }
+  } finally {
+    document.head.removeChild(tempStyle);
+  }
+}
+
+function buildMixedCss() {
+  let css = '';
+  for (const dim of MANIFEST.dimensions) {
+    const sourceTheme = state.dimensions[dim.id] || 'default';
+    css += (DIM_CSS[dim.id]?.[sourceTheme] || '') + '\n';
+  }
+  return css;
+}
+
+// ========== STATE PERSISTENCE ==========
+function saveState() {
+  try {
+    localStorage.setItem('wenyan-editor-state', JSON.stringify({
+      theme: state.currentTheme,
+      dimensions: state.dimensions,
+      mode: state.mode,
+    }));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('wenyan-editor-state'));
+    if (saved) {
+      if (saved.theme) {
+        state.currentTheme = saved.theme;
+        document.getElementById('themeSelect').value = saved.theme;
+        document.getElementById('panelThemeSelect').value = saved.theme;
+      }
+      if (saved.dimensions) {
+        state.dimensions = saved.dimensions;
+        for (const [dimId, themeName] of Object.entries(saved.dimensions)) {
+          const sel = document.querySelector(`#dimControls .dim-select[data-dim="${dimId}"]`);
+          if (sel) sel.value = themeName;
+        }
+      }
+      if (saved.mode) state.mode = saved.mode;
+      applyTheme(state.currentTheme);
+      if (state.mode === 'mix' && Object.keys(state.dimensions).length) {
+        applyMixedTheme();
+      }
+    }
+  } catch(e) {}
+}
+
+// ========== EVENTS ==========
+function setupEvents() {
+  // Editor input
+  const editor = document.getElementById('editor');
+  let renderTimer;
+  editor.addEventListener('input', () => {
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(renderMarkdown, 50);
+  });
+
+  // Tab support
+  editor.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const start = editor.selectionStart;
+      editor.value = editor.value.substring(0, start) + '  ' + editor.value.substring(editor.selectionEnd);
+      editor.selectionStart = editor.selectionEnd = start + 2;
+    }
+  });
+
+  // Theme selector (header)
+  document.getElementById('themeSelect').addEventListener('change', (e) => {
+    switchWholeTheme(e.target.value);
+  });
+
+  // Toggle panel
+  document.getElementById('togglePanel').addEventListener('click', () => {
+    const panel = document.getElementById('rightPanel');
+    panel.classList.toggle('open');
+    const btn = document.getElementById('togglePanel');
+    btn.classList.toggle('active');
+  });
+
+  // Copy button
+  document.getElementById('copyBtn').addEventListener('click', copyHtml);
+
+  // Toolbar buttons
+  document.querySelectorAll('.toolbar-btn').forEach(btn => {
+    btn.addEventListener('click', () => toolbarAction(btn.dataset.action));
+  });
+
+  // Keyboard shortcuts
+  editor.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+      e.preventDefault();
+      toolbarAction('bold');
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+      e.preventDefault();
+      toolbarAction('italic');
+    }
+  });
+}
+
+// ========== SAMPLE CONTENT ==========
+const SAMPLE_MD = `# Markdown 编辑器风格演示
+
+> 支持 16 种预设主题 + 元素级自由混搭，打造你的专属排版风格。
+
+## 功能特性
+
+支持 **加粗**、*斜体*、~~删除线~~ 等基础格式，以及更丰富的排版元素。
+
+### 代码展示
+
+行内代码 \`console.log("Hello")\` 和代码块：
+
+\`\`\`python
+def hello():
+    print("文颜风格 Markdown 编辑器")
+    return "Hello World"
+\`\`\`
+
+### 列表与引用
+
+- 无序列表项 1
+- 无序列表项 2
+  - 嵌套列表
+
+1. 有序列表项 1
+2. 有序列表项 2
+
+> 这是一段引用文字，展示了引用块的样式效果。在不同主题下，引用块会有不同的边框颜色、背景和装饰。
+
+### 表格
+
+| 功能 | 状态 | 说明 |
+|------|------|------|
+| 一键换肤 | ✅ | 16 种预设主题 |
+| 元素混搭 | ✅ | 自由组合各元素风格 |
+| 一键复制 | ✅ | 复制 HTML 粘贴到公众号 |
+
+### 链接与图片
+
+访问 [GitHub](https://github.com) 了解更多。
+
+---
+
+**切换右上角的主题选择器试试看！** 也可以打开「元素混搭」面板，单独设置每个元素的风格。`;
+
+// ========== GO ==========
+init();
+</script>
+</body>
+</html>

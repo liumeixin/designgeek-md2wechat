@@ -1,0 +1,276 @@
+/**
+ * 主题: 笔记蓝 (Notebook Blue)
+ * 灵感来源: 数字牧民-Lsk 公众号文章排版风格
+ * 特点: 白色背景、蓝色标题竖线、深色代码块、灰色引用块
+ */
+/* 全局属性 */
+#wenyan {
+    font-family: var(--sans-serif-font);
+    line-height: 1.75;
+    font-size: 16px;
+    color: #333333;
+    background-color: #fafafa;
+    background-image:
+        linear-gradient(rgba(0,0,0,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px);
+    background-size: 20px 20px;
+    padding: 20px 16px;
+    letter-spacing: 0.5px;
+}
+/* 全局子元素属性 */
+#wenyan h1,
+#wenyan h2,
+#wenyan h3,
+#wenyan h4,
+#wenyan h5,
+#wenyan h6,
+#wenyan p,
+#wenyan pre {
+    margin: 1.2em 0;
+}
+/* 段落 */
+#wenyan p {
+    letter-spacing: 0.02em;
+}
+/* 加粗 */
+#wenyan p strong {
+    font-weight: 700;
+    color: #2B6CB0;
+}
+/* 斜体 */
+#wenyan p em {
+    font-style: italic;
+    color: #555555;
+}
+/* 一级标题 */
+#wenyan h1 {
+    text-align: center;
+    font-size: 1.6em;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-top: 2em;
+    margin-bottom: 1.5em;
+    position: relative;
+    padding-bottom: 0.5em;
+}
+/* 标题后缀 - 居中短横线 */
+#wenyan h1::after {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 3px;
+    background-color: #576B95;
+    margin: 0.5em auto 0;
+    border-radius: 2px;
+}
+/* 二级标题 */
+#wenyan h2 {
+    text-align: left;
+    font-size: 1.3em;
+    font-weight: 700;
+    color: #1a1a1a;
+    padding-left: 14px;
+    position: relative;
+    margin-top: 1.8em;
+}
+/* 二级标题前缀 - 左侧蓝色竖线 */
+#wenyan h2::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10%;
+    height: 80%;
+    width: 4px;
+    background-color: #576B95;
+    border-radius: 2px;
+}
+/* 三-六级标题 */
+#wenyan h3,
+#wenyan h4,
+#wenyan h5,
+#wenyan h6 {
+    font-weight: 700;
+    color: #333333;
+    margin-top: 1.5em;
+}
+/* 三级标题 */
+#wenyan h3 {
+    font-size: 1.15em;
+}
+/* 四级标题 */
+#wenyan h4 {
+    font-size: 1.05em;
+}
+/* 五级标题 */
+#wenyan h5 {
+    font-size: 1em;
+}
+/* 六级标题 */
+#wenyan h6 {
+    font-size: 0.95em;
+    color: #888888;
+}
+/* 列表 */
+#wenyan ul,
+#wenyan ol {
+    padding-left: 1.5em;
+    color: #333333;
+}
+/* 列表元素 */
+#wenyan li {
+    margin-bottom: 0.5em;
+}
+/* 无序列表标记 - 蓝色实心圆 */
+#wenyan ul > li::marker {
+    color: #576B95;
+}
+/* 有序列表标记 */
+#wenyan ol > li::marker {
+    color: #576B95;
+    font-weight: 600;
+}
+/* 图片 */
+#wenyan img {
+    max-width: 100%;
+    height: auto;
+    margin: 1.5em auto;
+    display: block;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+/* 表格 */
+#wenyan table {
+    border-collapse: collapse;
+    margin: 1.5em auto;
+    width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
+    text-align: left;
+    overflow: auto;
+    display: table;
+    word-wrap: break-word;
+    word-break: break-all;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+}
+/* 表格单元格 */
+#wenyan table td,
+#wenyan table th {
+    font-size: 0.9em;
+    padding: 10px 14px;
+    line-height: 1.6;
+    color: #333333;
+    border: 1px solid #e0e0e0;
+    vertical-align: top;
+}
+/* 表格表头 */
+#wenyan table th {
+    font-weight: 600;
+    background-color: #f0f4f8;
+    color: #1a1a1a;
+}
+/* 表格斑马条纹 */
+#wenyan table tr:nth-child(2n) {
+    background-color: #fafafa;
+}
+/* 引用块 */
+#wenyan blockquote {
+    background: #f7f7f7;
+    border-left: 4px solid #576B95;
+    margin: 1.5em 0;
+    padding: 1em 1.2em;
+    border-radius: 0 6px 6px 0;
+    font-size: 0.95em;
+    color: #555555;
+    position: relative;
+}
+/* 引用块前缀 - 蓝色引号图标 */
+#wenyan blockquote::before {
+    content: '"';
+    position: absolute;
+    left: 12px;
+    top: 6px;
+    font-size: 2em;
+    color: #a8c0e8;
+    font-family: Georgia, serif;
+    line-height: 1;
+}
+/* 引用块内段落缩进避开引号 */
+#wenyan blockquote p {
+    padding-left: 1.5em;
+}
+/* 行内代码 */
+#wenyan p code,
+#wenyan li code {
+    font-family: var(--monospace-font);
+    color: #2B6CB0;
+    background-color: #e8f0fe;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    margin: 0 2px;
+}
+/* 代码块外围 */
+#wenyan pre {
+    border-radius: 8px;
+    line-height: 1.6;
+    margin: 1.5em 0;
+    padding: 1em;
+    background-color: #ffffff;
+    border: 1px solid #576B95;
+    overflow-x: auto;
+}
+/* 代码块 */
+#wenyan pre code {
+    font-family: var(--monospace-font);
+    display: block;
+    overflow-x: auto;
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    color: #8B4513;
+    font-size: 0.85em;
+}
+/* 分割线 */
+#wenyan hr {
+    border: none;
+    border-top: 1px solid #e0e0e0;
+    margin-top: 2.5em;
+    margin-bottom: 2.5em;
+}
+/* 链接 */
+#wenyan a {
+    word-wrap: break-word;
+    color: #576B95;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+}
+#wenyan a:hover {
+    border-bottom-color: #576B95;
+}
+/* 原始链接旁脚注上标 */
+#wenyan .footnote {
+    color: #576B95;
+    margin-left: 2px;
+}
+/* 脚注行 */
+#wenyan #footnotes p {
+    display: flex;
+    margin: 0;
+    font-size: 0.85em;
+    color: #888888;
+}
+/* 脚注行内编号 */
+#wenyan .footnote-num {
+    display: inline;
+    width: 10%;
+    color: #576B95;
+}
+/* 脚注行内文字 */
+#wenyan .footnote-txt {
+    display: inline;
+    width: 90%;
+    word-wrap: break-word;
+    word-break: break-all;
+}

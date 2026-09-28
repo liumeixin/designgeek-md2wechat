@@ -1,0 +1,65 @@
+/* 主题: 新年红 */
+#wenyan {
+    /* 背景：浅羊皮纸底色 + 波点装饰 */
+    background-color: #fdf6e3;
+    background-image: radial-gradient(#ffcdd2 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+    padding: 20px;
+    
+    /* 正文 */
+    --wy-text-color: #4a1c1c;
+    --wy-font-size: 16px;
+    --wy-line-height: 1.8;
+    --wy-letter-spacing: 0.6px;
+    
+    /* 强调 */
+    --wy-strong-color: #c62828;
+    --wy-em-color: #e53935;
+    
+    /* 标题 */
+    --wy-h1-color: #d32f2f;
+    --wy-h1-align: center;
+    --wy-h1-size: 1.7em;
+    --wy-h2-color: #c62828;
+    --wy-h2-size: 1.4em;
+    --wy-h3-color: #b71c1c;
+    --wy-h3-size: 1.2em;
+    
+    /* 引用块 */
+    --wy-bq-bg: #fff5f5;
+    --wy-bq-border: 6px solid #d32f2f;
+    --wy-bq-color: #5c2020;
+    --wy-bq-radius: 0 8px 8px 0;
+    --wy-bq-font-style: normal;
+    
+    /* 代码 */
+    --wy-code-inline-color: #b71c1c;
+    --wy-code-inline-bg: #ffebee;
+    --wy-code-inline-border: 1px solid #ffcdd2;
+    --wy-code-block-bg: #2b0a0a;
+    --wy-code-block-color: #ffcdd2;
+    --wy-code-block-border: none;
+    --wy-code-block-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    
+    /* 链接 */
+    --wy-link-color: #d32f2f;
+    --wy-link-border: 1px solid rgba(211, 47, 47, 0.3);
+    
+    /* 表格 */
+    --wy-table-th-bg: #ffebee;
+    --wy-table-th-color: #4a1c1c;
+    --wy-table-border: 1px solid #ffcdd2;
+    --wy-table-stripe-bg: #fff9f9;
+    
+    /* 分割线 */
+    --wy-hr-border: 2px dashed #ffcdd2;
+    --wy-hr-shadow: none;
+    
+    /* 图片 */
+    --wy-img-border: 2px solid #ffebee;
+    --wy-img-radius: 8px;
+    --wy-img-shadow: 0 4px 12px rgba(211, 47, 47, 0.15);
+    
+    /* 列表 */
+    --wy-list-marker-color: inherit;
+}

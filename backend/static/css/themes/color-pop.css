@@ -1,0 +1,63 @@
+/* 主题: 撞色活力 */
+#wenyan {
+    /* 背景 */
+    background-color: #fdfdfd;
+    padding: 30px 15px;
+    
+    /* 正文 */
+    --wy-text-color: #2c3e50;
+    --wy-font-size: 16px;
+    --wy-line-height: 1.8;
+    --wy-letter-spacing: 0.5px;
+    
+    /* 强调 */
+    --wy-strong-color: #2c3e50;
+    --wy-em-color: #ff4a6e;
+    
+    /* 标题 */
+    --wy-h1-color: #2c3e50;
+    --wy-h1-align: left;
+    --wy-h1-size: 1.8em;
+    --wy-h2-color: #2c3e50;
+    --wy-h2-size: 1.4em;
+    --wy-h3-color: #2c3e50;
+    --wy-h3-size: 1.2em;
+    
+    /* 引用块 */
+    --wy-bq-bg: transparent;
+    --wy-bq-border: 8px solid #ff4a6e;
+    --wy-bq-color: #2c3e50;
+    --wy-bq-radius: 0;
+    --wy-bq-font-style: italic;
+    
+    /* 代码 */
+    --wy-code-inline-color: #ffffff;
+    --wy-code-inline-bg: #2c3e50;
+    --wy-code-inline-border: 2px solid #ff4a6e;
+    --wy-code-block-bg: #1a1a1a;
+    --wy-code-block-color: #a8ffb2;
+    --wy-code-block-border: 3px solid #2c3e50;
+    --wy-code-block-shadow: 6px 6px 0px #ff4a6e;
+    
+    /* 链接 */
+    --wy-link-color: #ff4a6e;
+    --wy-link-border: 3px solid #2c3e50;
+    
+    /* 表格 */
+    --wy-table-th-bg: #2c3e50;
+    --wy-table-th-color: #2c3e50;
+    --wy-table-border: 1px solid #ccc;
+    --wy-table-stripe-bg: #f7f7f7;
+    
+    /* 分割线 */
+    --wy-hr-border: none;
+    --wy-hr-shadow: none;
+    
+    /* 图片 */
+    --wy-img-border: 3px solid #2c3e50;
+    --wy-img-radius: 0;
+    --wy-img-shadow: 6px 6px 0px #ff4a6e;
+    
+    /* 列表 */
+    --wy-list-marker-color: inherit;
+}

@@ -1,0 +1,63 @@
+/* 主题: 马卡龙 */
+#wenyan {
+    /* 背景 */
+    background-color: white;
+    padding: 20px;
+    
+    /* 正文 */
+    --wy-text-color: #444;
+    --wy-font-size: 16px;
+    --wy-line-height: 1.8;
+    --wy-letter-spacing: normal;
+    
+    /* 强调 */
+    --wy-strong-color: #000;
+    --wy-em-color: #666;
+    
+    /* 标题 */
+    --wy-h1-color: #ff6b9d;
+    --wy-h1-align: center;
+    --wy-h1-size: 1.6em;
+    --wy-h2-color: #333;
+    --wy-h2-size: 1.3em;
+    --wy-h3-color: #2e7d32;
+    --wy-h3-size: 1.15em;
+    
+    /* 引用块 */
+    --wy-bq-bg: #fff9c4;
+    --wy-bq-border: 6px solid #ffeb3b;
+    --wy-bq-color: #795548;
+    --wy-bq-radius: 0 12px 12px 0;
+    --wy-bq-font-style: normal;
+    
+    /* 代码 */
+    --wy-code-inline-color: #00796b;
+    --wy-code-inline-bg: #e0f2f1;
+    --wy-code-inline-border: 1px dashed #80cbc4;
+    --wy-code-block-bg: #1a1a1a;
+    --wy-code-block-color: #a5d6a7;
+    --wy-code-block-border: 1px solid #333;
+    --wy-code-block-shadow: none;
+    
+    /* 链接 */
+    --wy-link-color: #000;
+    --wy-link-border: 1px solid #000;
+    
+    /* 表格 */
+    --wy-table-th-bg: #e0f7fa;
+    --wy-table-th-color: #00796b;
+    --wy-table-border: 1px solid #ccc;
+    --wy-table-stripe-bg: #f7f7f7;
+    
+    /* 分割线 */
+    --wy-hr-border: none;
+    --wy-hr-shadow: none;
+    
+    /* 图片 */
+    --wy-img-border: 4px solid #b2ebf2;
+    --wy-img-radius: 12px;
+    --wy-img-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    
+    /* 列表 */
+    --wy-list-marker-color: inherit;
+}
