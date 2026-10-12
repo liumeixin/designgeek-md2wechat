@@ -1431,6 +1431,9 @@ function copyHtml() {
     [/^background-color$/, /^(transparent|rgba\(0,\s*0,\s*0,\s*0\))$/],
     [/^border(-(left|top|right|bottom))?$/, /^0(px)?\s+none/],
     [/^border-radius$/, /^0(px)?$/],
+    [/^border-collapse$/, /^separate$/],          // 表格默认值；只有 collapse 才值得内联
+    [/^padding$/, /^0(px)?(\s+0(px)?)*$/],        // 定向补 padding 时的零值噪音
+    [/^line-height$/, /^normal$/],
     [/^box-shadow$/, /^none$/],
     [/^opacity$/, /^1$/],
     [/^vertical-align$/, /^baseline$/],
@@ -1489,30 +1492,86 @@ function copyHtml() {
     'letter-spacing', 'text-align', 'text-decoration', 'text-decoration-line',
     'background-color', 'background-image', 'background-size', 'background-repeat',
     'background-position', 'background-attachment',
-    'border', 'border-left', 'border-top', 'border-right', 'border-bottom',
-    'border-radius',
+    'border', 'border-radius',
     // NOTE: border-color / border-style / border-left-color 为冗余长写，
-    // 已由 border / border-left 等简写覆盖，不再单独内联。
+    // 已由 border 简写覆盖，不再单独内联。
+    // border-left/top/right/bottom 改为「与 border 不同才输出」，见下方循环
+    // （2026-10-12 瘦身：表格单元格每个省 4 条边框声明）。
     'box-shadow', 'opacity',
-    // NOTE: All padding/margin excluded — WeChat editor applies its own
-    // default spacing for list items, blockquotes, code blocks etc.
-    // 'margin-left', 'margin-right' removed to let WeChat handle indent.
-    'list-style-type', 'vertical-align',
-    // NOTE: display/width/height/overflow/line-height excluded —
-    // WeChat editor handles its own layout; inlining these causes text overlap.
+    'vertical-align',
+    // NOTE: border-collapse 改为「仅 <table> 输出」（见 TABLE_TAGS）——
+    // 它是可继承属性，若不限定标签会连带刷到 thead/tbody/tr/th/td 共 17 处。
+    // NOTE: margin 仍全局排除 —— 微信编辑器对段落/列表有自己的间距。
+    // 但 2026-10-12 起改为「按标签定向补」：
+    //   padding      → PAD_TAGS（引用块 / 代码块 / 行内代码）
+    //   line-height  → LH_TAGS（引用块 / 代码块）
+    //   代码块换行兜底 → isCodeBlock（display / overflow-x）
+    //   list-style-type → LIST_TAGS（仅 ul/ol/li）
+    // display/width/height 仍全局排除 —— 全局内联 display 会导致正文文字重叠。
   ];
+  const BORDER_DIRS = ['border-left', 'border-top', 'border-right', 'border-bottom'];
+
+  // 定向补 padding：主题里 blockquote / pre / 行内 code 都声明了内边距，
+  // 但 padding 被全局排除 → 引用文字贴边框、行内代码底色贴字、代码块文字贴边。
+  const PAD_TAGS = new Set(['blockquote', 'pre', 'code']);
+  // line-height 同理：只在引用块 / 代码块上补回（正文行高交给微信默认）
+  const LH_TAGS = new Set(['blockquote', 'pre']);
+  // list-style-type 只对列表元素有意义，其余元素上纯属噪音（实测 40 处/篇）
+  const LIST_TAGS = new Set(['ul', 'ol', 'li']);
+  // border-collapse 是可继承属性，只该写在 <table> 上
+  const TABLE_TAGS = new Set(['table']);
+
+  // §1.8 配套：代码块长行兜底 —— 横向滚动（用户 2026-10-12 拍板）。
+  // 主题里 `#wenyan pre code { display:block; overflow-x:auto }` 会被白名单挡掉，
+  // 长代码行在移动端会溢出/被裁（§1.8 的立法意图正是防这个）。
+  // 只对**代码块上下文**（<pre> 及其内部 <code>）定向补回，不做全局 display。
+  const isCodeBlock = (el) => {
+    const t = (el.tagName || '').toLowerCase();
+    if (t === 'pre') return true;
+    if (t === 'code') {
+      const p = el.parentElement;
+      return !!p && (p.tagName || '').toLowerCase() === 'pre';
+    }
+    return false;
+  };
 
   liveEls.forEach((liveEl, i) => {
     const cloneEl = cloneEls[i];
     if (!cloneEl) return;
     try {
       const computed = getComputedStyle(liveEl);
-      let s = sanitizeKeptStyle(cloneEl.getAttribute('style') || '',
-                                (cloneEl.tagName || '').toLowerCase());
+      const tag = (cloneEl.tagName || '').toLowerCase();
+      let s = sanitizeKeptStyle(cloneEl.getAttribute('style') || '', tag);
       if (s && !s.endsWith(';')) s += ';';
       for (const prop of copyProps) {
         const val = cleanValue(prop, computed.getPropertyValue(prop));
         if (val) s += prop + ':' + val + ';';
+      }
+      // border 简写与四个方向长写完全重复时只留简写
+      const borderVal = cleanValue('border', computed.getPropertyValue('border'));
+      for (const dir of BORDER_DIRS) {
+        const v = cleanValue(dir, computed.getPropertyValue(dir));
+        if (v && v !== borderVal) s += dir + ':' + v + ';';
+      }
+      if (LIST_TAGS.has(tag)) {
+        const v = cleanValue('list-style-type', computed.getPropertyValue('list-style-type'));
+        if (v) s += 'list-style-type:' + v + ';';
+      }
+      if (TABLE_TAGS.has(tag)) {
+        const v = cleanValue('border-collapse', computed.getPropertyValue('border-collapse'));
+        if (v) s += 'border-collapse:' + v + ';';
+      }
+      if (PAD_TAGS.has(tag)) {
+        const v = cleanValue('padding', computed.getPropertyValue('padding'));
+        if (v) s += 'padding:' + v + ';';
+      }
+      if (LH_TAGS.has(tag)) {
+        const v = cleanValue('line-height', computed.getPropertyValue('line-height'));
+        if (v) s += 'line-height:' + v + ';';
+      }
+      if (isCodeBlock(liveEl)) {
+        if (tag === 'code') s += 'display:block;';   // 主题：pre code { display:block }
+        s += 'overflow-x:auto;';                     // 长行横向滚动，不换行
       }
       cloneEl.setAttribute('style', s);
     } catch(e) {}

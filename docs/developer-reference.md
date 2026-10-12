@@ -246,6 +246,31 @@ document.body.removeChild(tmp);
 
 **copyHtml()**：只提取 `background-color` 和 `padding`，跳过 `background-image`。
 
+## 导出 HTML 属性白名单（`copyHtml()` 的 `copyProps`）
+
+导出 HTML 的内联样式由 `frontend/index.html` 的 `copyHtml()` **统一生成**，规则不在主题里。
+主题 CSS 只是「期望值」，能不能进导出要看这张白名单 —— 这是最容易踩的坑。
+
+| 类别 | 属性 | 说明 |
+|---|---|---|
+| 全局白名单 | `color` `font-size` `font-weight` `font-style` `font-family` `letter-spacing` `text-align` `text-decoration(-line)` `background-*` `border` `border-radius` `box-shadow` `opacity` `vertical-align` | 逐元素取 `getComputedStyle` 内联 |
+| **定向白名单**（2026-10-12 新增） | `border-collapse` → 仅 `<table>`；`list-style-type` → 仅 `ul/ol/li`；`padding` → `blockquote`/`pre`/`code`；`line-height` → `blockquote`/`pre`；`display` + `overflow-x` → **代码块上下文**（`<pre>` 及其内部 `<code>`） | 见下 |
+| 永不内联 | `margin` `width` `height` `position` `z-index` `float` | 固定宽高会让公众号编辑器报「不同屏幕下宽度差异 / 居中不一致」；`display` 全局内联会导致正文文字重叠 |
+
+- **`border-<方向>`**：只有与 `border` 简写**不同**时才输出（表格单元格因此省掉 4/5 的边框声明）。
+- **代码块长行**：按用户 2026-10-12 拍板采用**横向滚动**（`overflow-x:auto`，不换行），
+  与主题 `#wenyan pre code { display:block; overflow-x:auto }` 的意图一致。
+- **`NOOP_RULES`**：计算值等于属性初始值的声明会被丢弃（`border-collapse:separate`、
+  `padding:0`、`line-height:normal`、`background-image:none` …），避免导出臃肿。
+
+> 🔴 改这张白名单**必须**用真实浏览器跑一遍导出再复检，纯静态看代码判断不出来：
+> ```bash
+> cd frontend && python -m http.server 8899 --bind 127.0.0.1   # 另开终端
+> node D:/aiwork/scripts/_out/export_probe.cjs http://127.0.0.1:8899/index.html ugreen sample.md out.html
+> python scripts/check_wechat_spec.py out.html --contrast
+> ```
+> 依据与实测数据 → `docs/微信编辑器规范复核-表格引用代码-2026-10-12.md`。
+
 ## 图片代理（CORS 修复）
 
 Aliyun OSS 图片直链无 CORS 头，Canvas/Image 无法使用。添加后端代理：

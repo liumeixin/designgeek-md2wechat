@@ -334,13 +334,25 @@ def build():
                 dim_css_js[dim_key][theme_name] = dimension_data[dim_key][theme_name]
 
     # Write JSON data files for the HTML to consume
-    # Merge with existing themes.json to preserve hand-crafted CSS (e.g. grass with ::after decorations)
+    #
+    # 🔴 themes.json 是「双源」的，合并规则必须区分两类主题（2026-10-12 踩坑）：
+    #   ① 15 个主题：CSS 文件只是 --wy-* 设计令牌调色板（约 1.5 KB），
+    #      完整主题（含 ::after 装饰、SVG 背景）只存在于 themes.json（4~12 KB）
+    #      ⇒ 必须保留 themes.json 的现有条目，否则手写主题会被短调色板冲掉
+    #   ② 4 个主题：CSS 文件本身就是完整主题，与 themes.json 条目逐字节一致
+    #      ⇒ 必须让 CSS 胜出，否则改 CSS 会被静默回退
+    #        （2026-10-12 改 ugreen h1 字号时正是这样被吃掉的）
+    # 判据：显式名单。两类主题的长度比分别是 1.0 与 2.7+，用「谁更长」当判据
+    # 在边界上不可靠（差 2 个字符就会翻转），所以不再依赖长度比较。
+    CSS_AUTHORITATIVE = {"dark-green", "notebook-blue", "notebook-purple", "ugreen"}
     existing_themes_path = OUTPUT / "themes.json"
     if existing_themes_path.exists():
         try:
             existing_themes = json.loads(existing_themes_path.read_text(encoding='utf-8'))
-            # Keep existing CSS if it's longer (hand-crafted > auto-extracted)
             for name, css in theme_css_js.items():
+                if name in CSS_AUTHORITATIVE:
+                    continue  # 以 CSS 文件为准（theme_css_js 里已是 CSS 原文）
+                # 其余主题：保留更长的现有条目（手写 > 自动抽取）
                 if name in existing_themes and len(existing_themes[name]) > len(css):
                     theme_css_js[name] = existing_themes[name]
             # Preserve themes that exist in file but not in CSS dir

@@ -35,7 +35,7 @@
 /* ===== 一级标题 - 大号灰色编号 (01 02 03...) ===== */
 /* 用法: # 01 STORAGE STRATEGY */
 #wenyan h1 {
-    font-size: 3.25em;
+    font-size: 48px;
     color: #d7ddd6;
     font-weight: 400;
     letter-spacing: -3px;
