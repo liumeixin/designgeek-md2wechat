@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>文颜风格 Markdown 编辑器</title>
+<title>DesignGeek Editor</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -275,7 +275,7 @@ html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Sego
 <div class="app">
   <!-- Header -->
   <div class="header">
-    <div class="logo">✦ 文颜风格编辑器</div>
+    <div class="logo">✦ DesignGeek Editor</div>
     <div class="spacer"></div>
 
     <select id="themeSelect" class="theme-select" title="整体主题切换">
@@ -576,9 +576,11 @@ function renderMarkdown() {
   let htmlContent = normalizeImageUrls(marked.parse(processedMd));
 
   // Restore empty lines: <p>%EL%</p> → empty paragraph
+  // §1.4/§1.5：不要给空行占位段加 height —— 一个 &nbsp; 本身就撑起一个行盒，
+  // 再声明固定 height 只会让公众号编辑器把它判成「特殊排版」。
   htmlContent = htmlContent.replace(
     /<p[^>]*>\s*%EL%\s*<\/p>/gi,
-    '<p style="margin:0;padding:0;height:1.2em;">&nbsp;</p>'
+    '<p style="margin:0;padding:0;">&nbsp;</p>'
   );
 
   preview.innerHTML = htmlContent;
@@ -1437,6 +1439,35 @@ function copyHtml() {
   ];
   const baseFont = getComputedStyle(wenyan).fontFamily;
 
+  // §1.4/§1.5：元素自带的 style（用户 Markdown 里的原始 HTML）原先会**原样保留**，
+  // 从而绕过下面的 copyProps 白名单 —— 固定宽高照样漏进导出结果，被公众号编辑器
+  // 判成「不同屏幕下宽度差异 / 居中布局不一致」。
+  // 这里对保留的 style 做同一口径的过滤：只剔「固定尺寸」，百分比 / auto 放行；
+  // img / video / svg 与行内元素豁免 —— 与 scripts/check_wechat_spec.py 保持一致。
+  const INLINE_TAGS = new Set(['a', 'span', 'strong', 'em', 'b', 'i', 'u', 's', 'code',
+    'sub', 'sup', 'small', 'mark', 'br', 'label', 'abbr', 'cite', 'q', 'time', 'kbd', 'samp', 'var']);
+  const MEDIA_TAGS = new Set(['img', 'video', 'svg', 'canvas', 'iframe']);
+  const DIM_PROPS = ['width', 'height', 'min-width', 'max-width', 'min-height', 'max-height'];
+  function isFixedLen(v) {
+    const t = String(v || '').trim().toLowerCase();
+    if (!t || t === 'auto' || t === 'inherit' || t === 'initial' || t === 'unset') return false;
+    return /^-?[\d.]+(px|em|rem|pt|pc|in|cm|mm|q|ex|ch|vw|vh|vmin|vmax)$/.test(t);
+  }
+  function sanitizeKeptStyle(styleText, tag) {
+    if (!styleText) return '';
+    if (MEDIA_TAGS.has(tag) || INLINE_TAGS.has(tag)) return styleText;
+    const out = [];
+    for (const decl of styleText.split(';')) {
+      const idx = decl.indexOf(':');
+      if (idx < 0) { if (decl.trim()) out.push(decl.trim()); continue; }
+      const prop = decl.slice(0, idx).trim().toLowerCase();
+      const val = decl.slice(idx + 1).trim();
+      if (DIM_PROPS.includes(prop) && isFixedLen(val)) continue;   // §1.4 / §1.5
+      out.push(prop + ':' + val);
+    }
+    return out.length ? out.join(';') + ';' : '';
+  }
+
   function cleanValue(prop, raw) {
     const v = String(raw || '').trim();
     if (!v || v === 'initial' || v === 'unset' || v === 'inherit') return '';
@@ -1476,7 +1507,8 @@ function copyHtml() {
     if (!cloneEl) return;
     try {
       const computed = getComputedStyle(liveEl);
-      let s = cloneEl.getAttribute('style') || '';
+      let s = sanitizeKeptStyle(cloneEl.getAttribute('style') || '',
+                                (cloneEl.tagName || '').toLowerCase());
       if (s && !s.endsWith(';')) s += ';';
       for (const prop of copyProps) {
         const val = cleanValue(prop, computed.getPropertyValue(prop));
@@ -1590,13 +1622,15 @@ function injectPseudoElements(clone, themeCss) {
           const span = document.createElement('span');
           span.className = 'pseudo-' + pseudoType;
 
-          // Build inline style: copy all props except position-related ones
+          // Build inline style: copy all props except position/dimension ones
           // §3 规范不建议设置 font-family，伪元素同样不输出
+          // §1.4/§1.5 固定 width/height 不输出（notebook-blue / notebook-purple 的
+          //   h1::before{width:40px} 之类否则会被内联成固定宽度）
           let styleText = '';
           for (let j = 0; j < rule.style.length; j++) {
             const prop = rule.style[j];
             if (prop === 'content') continue;
-            if (/^(position|top|left|right|bottom|z-index|transform|float|clear|font-family)$/i.test(prop)) continue;
+            if (/^(position|top|left|right|bottom|inset|z-index|transform|float|clear|font-family|width|height|min-width|max-width|min-height|max-height)$/i.test(prop)) continue;
             styleText += prop + ':' + rule.style.getPropertyValue(prop) + ';';
           }
           span.style.cssText = styleText;
@@ -1749,7 +1783,7 @@ const SAMPLE_MD = `# Markdown 编辑器风格演示
 
 \`\`\`python
 def hello():
-    print("文颜风格 Markdown 编辑器")
+    print("DesignGeek Editor")
     return "Hello World"
 \`\`\`
 

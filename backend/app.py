@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-文颜 Markdown 排版器 — Flask Web 应用
-====================================
+DesignGeek Editor — Flask Web 应用
+==================================
 支持一键换肤 + 单元素混搭
 
 用法: python app.py
@@ -257,8 +257,8 @@ def main():
 
     print(f"""
 ╔══════════════════════════════════════════════════╗
-║  文颜 Markdown 排版器                              ║
-║  访问地址: http://localhost:{port:<20}║
+║  DesignGeek Editor                               ║
+║  访问地址: http://localhost:{port:<20} ║
 ╚══════════════════════════════════════════════════╝
 """)
 

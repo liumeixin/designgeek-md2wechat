@@ -5,7 +5,7 @@ chcp 65001 >nul
 netstat -an | findstr ":18888" | findstr "LISTENING" >nul
 if %errorlevel%==0 (
     start http://localhost:18888
-    echo 文颜排版器已在运行，已打开浏览器。
+    echo DesignGeek Editor 已在运行，已打开浏览器。
     exit /b
 )
 

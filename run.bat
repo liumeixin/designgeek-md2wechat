@@ -1,9 +1,9 @@
 @echo off
 chcp 65001
-title 文颜 Markdown 排版器
+title DesignGeek Editor
 
 echo ========================================
-echo   文颜 Markdown 排版器
+echo   DesignGeek Editor
 echo ========================================
 echo.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-文颜 Markdown 排版器 — Windows 托盘程序
+DesignGeek Editor — Windows 托盘程序
 ========================================
 启动 Flask 后台服务 + 系统托盘图标
 """
@@ -19,11 +19,11 @@ from PIL import Image, ImageDraw, ImageFont
 
 # 全局变量
 tray_icon = None
-TASK_NAME = "文颜排版器"
-BAT_PATH = os.path.join(SCRIPT_DIR, '文颜排版器.bat')
+TASK_NAME = "DesignGeek Editor"
+BAT_PATH = os.path.join(SCRIPT_DIR, 'DesignGeek-Editor.bat')
 
 def create_icon_image():
-    """创建托盘图标（简洁的文颜 A 字标）"""
+    """创建托盘图标（简洁的 DesignGeek 字标）"""
     size = 128
     img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
@@ -96,7 +96,7 @@ def update_menu(icon):
     autostart_text = "✓ 已设置开机自启" if autostart_enabled else "设置开机自启"
     
     menu = pystray.Menu(
-        pystray.MenuItem('打开文颜排版器', on_open_browser, default=True),
+        pystray.MenuItem('打开 DesignGeek Editor', on_open_browser, default=True),
         pystray.MenuItem(autostart_text, on_toggle_autostart),
         pystray.MenuItem('退出', on_exit)
     )
@@ -146,7 +146,7 @@ def main():
     autostart_text = "✓ 已设置开机自启" if autostart_enabled else "设置开机自启"
     
     menu = pystray.Menu(
-        pystray.MenuItem('打开文颜排版器', on_open_browser, default=True),
+        pystray.MenuItem('打开 DesignGeek Editor', on_open_browser, default=True),
         pystray.MenuItem(autostart_text, on_toggle_autostart),
         pystray.MenuItem('退出', on_exit)
     )
@@ -154,7 +154,7 @@ def main():
     tray_icon = pystray.Icon(
         "wenyan-editor",
         icon_image,
-        "文颜 Markdown 排版器",
+        "DesignGeek Editor",
         menu
     )
     

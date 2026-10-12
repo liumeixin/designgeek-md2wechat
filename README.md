@@ -1,6 +1,6 @@
-# 文颜 Markdown 排版器 · md2wechat
+# DesignGeek Editor · md2wechat
 
-微信公众号 Markdown 排版工具，支持 19 个主题 × 18 个维度的 CSS 混搭。
+微信公众号 Markdown 排版工具（品牌：**设计虱 DesignGeek**），支持 19 个主题 × 18 个维度的 CSS 混搭。
 **同一份源码同时提供「Windows 桌面端」和「Docker 容器」两种运行方式。**
 
 > 📐 **排版规范**：[微信公众平台编辑器插件开发规范](https://developers.weixin.qq.com/doc/service/guide/product/plugin_spec.html)
@@ -25,7 +25,7 @@
 ├── docs/                     # 开发文档与合规报告
 ├── Dockerfile                # 薄容器（不打 Playwright，前端/后端靠挂载）
 ├── docker-compose.yml        # 容器编排
-├── 文颜排版器.bat / .vbs      # Windows 双击启动（托盘）
+├── DesignGeek-Editor.bat/.vbs # Windows 双击启动（托盘）
 ├── run.bat                   # Windows 命令行启动
 └── requirements.txt          # 桌面端依赖
 ```
@@ -40,7 +40,7 @@
 
 ### 启动
 
-直接双击 **`文颜排版器.bat`**（托盘方式静默启动），或命令行：
+直接双击 **`DesignGeek-Editor.bat`**（托盘方式静默启动），或命令行：
 
 ```cmd
 run.bat

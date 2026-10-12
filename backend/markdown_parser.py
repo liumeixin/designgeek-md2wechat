@@ -153,9 +153,11 @@ def parse_markdown_for_wechat(md: str) -> str:
 
     # 2. 给 <div id="wenyan"> 加内联样式
     #    规范 §3：不建议设置任何 font-family，平台默认字体栈已最优，故不声明字体族。
+    #    §1.4/§1.5：**不声明 max-width / margin:0 auto** —— 固定宽度 + 自动外边距居中
+    #    正是公众号编辑器报「不同屏幕下宽度差异、居中布局不一致」的典型来源。
     html = re.sub(
         r'<div id="wenyan">',
-        '<div id="wenyan" style="max-width:700px;margin:0 auto;line-height:1.75;font-size:16px;color:#333;word-break:break-word;">',
+        '<div id="wenyan" style="line-height:1.75;font-size:16px;color:#333;word-break:break-word;">',
         html
     )
 
