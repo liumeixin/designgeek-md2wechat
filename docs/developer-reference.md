@@ -1,53 +1,102 @@
-# 文言排版器 — 开发者参考文档
+# 文颜 Markdown 排版器 · md2wechat — 开发者参考文档
 
 > 从 wechat-markdown-styler 技能降级而来，供 Agent 和开发者参考。
 
-## 项目结构（2026.05 最终版）
+## 单仓库（2026-10-12 合并）
+
+本仓库同时承载**桌面端**与**容器**两个发行版，不再是两个仓库互相同步。
+
+> 合并前是 `wenyan-editor-win`（主源）+ `wenyan-editor-docker`（同步镜像），
+> 靠 `scripts/sync_docker_from_win.py` 手工同步 —— 该脚本已随合并删除。
+> 合并理由：两仓库约 95% 文件相同，实际差异只有 6 个文件，而手工同步
+> **没有任何机制拦截漂移**。
+
+- 容器相关文件只有 `Dockerfile` + `docker-compose.yml` + `.dockerignore`，改动面极小。
+- ⚠️ 改主题配色前先看
+  `docs/微信编辑器规范合规-2026-10-12.md` §七.5：19 个主题里 **15 个以 `frontend/themes.json`
+  为真源、4 个以 `backend/static/css/themes/*.css` 为真源**，改错地方会被 `build.py` 冲掉。
+
+## 提交约定（2026-10-12）
+
+改动后**先提醒用户确认**，确认后再提交并推送到 Gitea：
+
+```bash
+python scripts/commit_and_push.py -m "提交说明"   # 提交 + 推送
+python scripts/commit_and_push.py                 # 预览：只列出待提交改动
+```
+
+## 排版规范（改动前必读）
+
+**微信公众平台编辑器插件开发规范**
+<https://developers.weixin.qq.com/doc/service/guide/product/plugin_spec.html>
+
+公众号编辑器会校验粘贴进去的 HTML。**所有「导出 HTML」相关的改动都必须对照此规范**，
+重点：§1.3 `line-height`、§1.4/§1.5 固定宽高、**§1.6 `text-align`（只接受
+`left`/`center`/`right`/`justify`）**、§1.7 SVG `animate`、§1.8 `<pre>`、
+**§3 不建议设置 `font-family`**、§4.1.1 颜色对比度、§4.5.2 不输出 `!important`。
+
+```bash
+python scripts/check_wechat_spec.py out.html --contrast   # 静态自检，退出码 0/1/2
+```
+
+完整审计报告：`docs/微信编辑器规范合规-2026-10-12.md`。
+
+## 项目结构（2026-10-12）
 
 ```
-wenyan-editor/                    # GitHub 仓库根目录
-├── .github/workflows/docker-publish.yml  # GHCR 自动构建
-├── docker-compose.yml            # 根目录（旧版，可忽略）
+design-shi-md2wechat/                     # 单仓库（桌面端 + 容器共用）
+├── .github/workflows/docker-publish.yml  # GHCR 自动构建（IMAGE_NAME 已写死）
+├── .dockerignore                         # 构建上下文排除（挡 .venv / *.bak / 桌面端文件）
+├── Dockerfile                            # 薄容器（不含 Playwright）
+├── docker-compose.yml                    # image: + build: 同时提供
 ├── backend/
-│   ├── app.py                    # Flask 应用（12 个 API）
-│   ├── markdown_parser.py        # MD → 语义化 HTML / 内联样式 HTML
-│   └── static/css/themes/        # 16 个主题 CSS 文件
+│   ├── app.py                            # Flask 应用（桌面端/容器共用，端口由 PORT 覆盖）
+│   ├── markdown_parser.py                # MD → 语义化 HTML / 内联样式 HTML
+│   └── static/css/themes/                # 19 个主题 CSS 文件
 ├── frontend/
-│   ├── index.html                # 前端 UI
-│   ├── themes.json               # 主题 CSS 集合（key-value，CSS 字符串）
-│   ├── dimensions.json           # 维度混搭配置（CSS 片段 per theme per dimension）
-│   └── ...
-└── wenyan-data/                  # Docker 部署目录（可独立运行）
-    ├── app.py, markdown_parser.py, ...
-    ├── docker-compose.yml        # image: ghcr.io/liumeixin/wenyan-data:latest
-    └── custom_themes.json        # 自定义主题持久化
+│   ├── index.html                        # 前端 UI（唯一入口）
+│   ├── build.py                          # CSS → 三个 JSON
+│   ├── themes.json                       # 主题 CSS 集合（key-value，CSS 字符串）
+│   ├── dimensions.json                   # 维度混搭配置（CSS 片段 per theme per dimension）
+│   └── manifest.json                     # 主题/维度清单
+├── scripts/                              # html2png.mjs / check_wechat_spec.py / commit_and_push.py
+├── docs/                                 # 本文档 + 合规报告
+├── wenyan-data/                          # 运行时数据卷（custom_themes.json 等）
+├── 文颜排版器.bat / .vbs, run.bat         # 桌面端启动器
+└── requirements.txt                      # 桌面端依赖
 ```
 
 ### 关键路径映射
-- GitHub 仓库：`liumeixin/wenyan-editor`
-- Docker 镜像：`ghcr.io/liumeixin/wenyan-data:latest`
-- NAS 部署：`wenyan-editor/wenyan-data/` 目录
-- 端口：NAS 18080 → 容器 8080
+- Gitea 仓库：`Agent/design-shi-md2wechat`（`https://dx4700-gitea.tocmcc.cn`）
+- Docker 镜像：`ghcr.io/liumeixin/design-shi-md2wechat:latest`
+- 端口：桌面端 **18888**；容器内 **8080**，映射宿主 `18888:8080`
+- ⚠️ 旧值已作废：`liumeixin/wenyan-editor`、`ghcr.io/liumeixin/wenyan-data`、
+  以及「NAS 18080 → 容器 8080」的旧部署口径。
 
 ## 双层主题系统
 1. **内置主题**：`frontend/themes.json` 存储 CSS 字符串（key=主题名，value=完整 CSS）
 2. **维度混搭**：`frontend/dimensions.json` 存储 CSS 片段（key=维度名，value={主题名: CSS片段}）
 3. **自定义主题**：`wenyan-data/custom_themes.json` 服务端持久化
 
-### 19 个维度（dimensions.json）
-background, text-color, h1, h2, h3h6, bold, italic, blockquote, inline-code, code-block, ul, ol, links, table, image, hr, footnote, spacing, typography
+### 18 个维度（dimensions.json）
+background, text-color, h1, h2, h3h6, bold, italic, blockquote, inline-code, code-block, ul, ol, links, table, image, hr, footnote, spacing
 
-### 17 个内置主题
-claude, cli, color-pop, cyber, dark-green, default, fireworks, girl-pink, grass, lavender-purple, macarons, newyear, notebook-blue, notebook-purple, parrotalk, purple-yellow-pop, sunrise, winter
+### 19 个内置主题
+claude, cli, color-pop, cyber, dark-green, default, fireworks, girl-pink, grass, lavender-purple, macarons, newyear, notebook-blue, notebook-purple, parrotalk, purple-yellow-pop, sunrise, ugreen, winter
 
-### 8 个 API
+> `grass-nobg`（零样式坏主题）已于 2026-10-12 删除。
+
+### API
 - POST `/convert` — MD → 语义化 HTML（预览）
 - POST `/convert-inline` — MD → 内联样式 HTML（公众号，剥离 `<style>` 标签）
+- POST `/api/screenshot` — HTML → PNG（Playwright，桌面端/容器路径自动探测）
 - GET `/api/themes` — 主题列表
 - GET `/api/dimensions` — 维度配置
 - GET `/api/theme-css/<id>` — 主题 CSS
 - GET/POST `/api/custom-themes` — 自定义主题 CRUD
 - DELETE `/api/custom-themes/<id>` — 删除自定义主题
+- GET `/api/proxy-image?url=…` — 图片代理（绕 OSS CORS）
+- GET `/<path:filename>` — 前端静态文件
 
 ## dimensions.json 结构（重要！）
 
@@ -67,24 +116,26 @@ claude, cli, color-pop, cyber, dark-green, default, fireworks, girl-pink, grass,
 ## 新建主题工作流
 
 ### CSS 源文件位置
-- **源文件目录**：`/opt/data/cache/documents/xhs-css-extract/`
-- 每个主题一个 `.css` 文件，命名即主题 ID
+- **源文件目录**：`backend/static/css/themes/`（每个主题一个 `.css`，文件名即主题 ID）
+- 可用环境变量 `WENYAN_CSS_DIR` 覆盖
 
 ### 构建流程
 ```bash
-# 1. 在源文件目录创建 CSS
+# 1. 在 backend/static/css/themes/ 下创建或修改 CSS
 # 2. 从 repo 根目录运行 build：
-cd /path/to/wenyan-editor
-python3 frontend/build.py
+cd frontend && python build.py
 # 输出：themes.json, dimensions.json, manifest.json
-# 3. 提交并推送
-git add -A && git commit -m "feat: add XXX theme" && git push
+# 3. 提交并推送（先提醒用户确认）
+python scripts/commit_and_push.py -m "feat: add XXX theme"
 ```
 
 ### build.py 关键配置
-- `CSS_DIR = Path("/opt/data/cache/documents/xhs-css-extract")` — CSS 源文件目录
+- `CSS_DIR = Path(os.environ.get("WENYAN_CSS_DIR", .../backend/static/css/themes))` — **相对路径**（旧版硬编码 `/opt/data/cache/documents/xhs-css-extract`，已废）
 - `theme_display` 字典 — 主题显示名（需手动添加）
 - `DIMENSIONS` 字典 — 18 个维度的 CSS 选择器匹配规则
+- 🔴 **合并回退块**：若 `themes.json` 已存在，会保留「比 CSS 更长」的条目，并保留
+  「只存在于 JSON、不存在于 CSS 目录」的主题 —— **删主题时必须同时删 JSON 条目**，
+  否则会被这个回退块重新加回来。
 
 ### CSS 文件格式规范
 ```css
@@ -150,14 +201,14 @@ sel.removeAllRanges();
 document.body.removeChild(tmp);
 ```
 
-**涉及文件**：`frontend/standalone.html` 和 `frontend/index.html` 的 `copyHtml()` 函数，两文件要同步修改。
+**涉及文件**：`frontend/index.html` 的 `copyHtml()` 函数（独立版 `standalone.html` 已于 2026-10-12 弃用删除，现只有这一个入口）。
 
 ## 手机预览模式（2026-05-16）
 
 预览栏「📱 手机」按钮，切换 375px 手机外壳模拟：
 - 动态创建 `.phone-frame` div（圆角 32px + 刘海 + 状态栏）
 - CSS：`#preview-scroll.phone-mode #wenyan { max-width: 100% !important; }`
-- 涉及文件：`frontend/standalone.html`、`frontend/index.html`
+- 涉及文件：`frontend/index.html`
 
 ## 小红书排版截图模式（2026-05-20）
 
@@ -173,7 +224,7 @@ document.body.removeChild(tmp);
 // 4. 返回 HTML 字符串数组，每项为一页内容
 ```
 
-**JS 函数**（两文件同步）：
+**JS 函数**（均在 `frontend/index.html`）：
 - `toggleXhsMode()` — 切换 XHS 模式
 - `generateXhsPages()` — 生成分页 + 渲染卡片
 - `splitContentIntoPages(html, css, w, h)` — 分页算法（返回 Promise，需等待图片加载）
@@ -208,11 +259,17 @@ GET /api/image-proxy?url=https://xxx.oss-cn-beijing.aliyuncs.com/xxx.webp
 ## 常见问题
 
 ### Flask 找不到模块
-venv 里没装 flask → `/opt/hermes/.venv/bin/python3 -m pip install flask`
+桌面端 venv 里没装 flask → `.venv\Scripts\python.exe -m pip install flask`
 
-### Git push 失败 "could not read Password"
-用 `/opt/data/workspace/Projects/wenyan-editor`（remote URL 内嵌 token），不要用 `/tmp` 克隆的副本。
-⚠️ `/opt/data/.env` 里的 `GITHUB_TOKEN` 已过期（401）。
+### Git push 失败
+非交互 shell 拿不到凭据 → **一律用 `python scripts/commit_and_push.py`**
+（它从 `D:/aiwork/services/credentials.env` 读 `GITEA_TOKEN` 走 `http.extraheader`）。
+⚠️ Bash 工具恒注入 `http_proxy`，会让 git 看到「代理的假 502」—— 脚本内已自动剔除。
+
+### 容器里截图功能
+容器**不打包 Playwright**，`backend/app.py` 会自动把截图脚本回落到
+`/opt/data/scripts_node/pw_runtime/html2png.mjs`。若该路径不存在，截图 API 会失败 ——
+这是既有状态，不是合并引入的。
 
 ### Flask 304 缓存问题
 在 `app.py` 的 `after_request` 中对 JSON 文件加 no-cache 头。

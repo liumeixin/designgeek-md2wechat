@@ -1410,13 +1410,58 @@ function copyHtml() {
   const liveEls = [wenyan, ...wenyan.querySelectorAll('*')];
   const cloneEls = [clone, ...clone.querySelectorAll('*')];
 
+  // ── 微信公众平台编辑器插件开发规范 · 合规处理 ───────────────────────────
+  // 规范原文：https://developers.weixin.qq.com/doc/service/guide/product/plugin_spec.html
+  //  §1.6  text-align 只接受 left / center / right / justify。start / end 是逻辑值，
+  //        各终端兼容性不一致（部分设备居中、部分居左），必须归一化后再输出。
+  //  §3    不建议设置任何 font-family —— 平台默认字体栈已最优，正文一律不内联字体。
+  //  §1.4/§1.5  固定 width / height 不内联（避免居中不一致与移动端内容被裁切）。
+  //  §4.5.2  不输出 !important。
+  const ALIGN_MAP = { start: 'left', end: 'right', 'match-parent': 'left' };
+  const ALIGN_OK = { left: 1, center: 1, right: 1, justify: 1 };
+  // 计算值等于属性初始值 → 该声明无效，内联只会让 HTML 变臃肿，一并丢弃
+  const NOOP_RULES = [
+    [/^background-image$/, /^none$/],
+    [/^background-size$/, /^auto$/],
+    [/^background-repeat$/, /^repeat$/],
+    [/^background-position$/, /^(0%\s+0%|0px\s+0px|left top)$/],
+    [/^background-attachment$/, /^scroll$/],
+    [/^background-color$/, /^(transparent|rgba\(0,\s*0,\s*0,\s*0\))$/],
+    [/^border(-(left|top|right|bottom))?$/, /^0(px)?\s+none/],
+    [/^border-radius$/, /^0(px)?$/],
+    [/^box-shadow$/, /^none$/],
+    [/^opacity$/, /^1$/],
+    [/^vertical-align$/, /^baseline$/],
+    [/^letter-spacing$/, /^normal$/],
+    [/^text-decoration(-line)?$/, /^none\b/],
+  ];
+  const baseFont = getComputedStyle(wenyan).fontFamily;
+
+  function cleanValue(prop, raw) {
+    const v = String(raw || '').trim();
+    if (!v || v === 'initial' || v === 'unset' || v === 'inherit') return '';
+    if (prop === 'text-align') {                       // §1.6
+      const k = v.toLowerCase();
+      return ALIGN_MAP[k] || (ALIGN_OK[k] ? k : '');
+    }
+    if (prop === 'font-family') {                      // §3：仅保留与正文不同的字体
+      return v === baseFont ? '' : v;
+    }
+    for (const [p, noop] of NOOP_RULES) {
+      if (p.test(prop) && noop.test(v)) return '';
+    }
+    return v;
+  }
+
   const copyProps = [
     'color', 'font-size', 'font-weight', 'font-style', 'font-family',
     'letter-spacing', 'text-align', 'text-decoration', 'text-decoration-line',
     'background-color', 'background-image', 'background-size', 'background-repeat',
     'background-position', 'background-attachment',
     'border', 'border-left', 'border-top', 'border-right', 'border-bottom',
-    'border-radius', 'border-color', 'border-left-color', 'border-style',
+    'border-radius',
+    // NOTE: border-color / border-style / border-left-color 为冗余长写，
+    // 已由 border / border-left 等简写覆盖，不再单独内联。
     'box-shadow', 'opacity',
     // NOTE: All padding/margin excluded — WeChat editor applies its own
     // default spacing for list items, blockquotes, code blocks etc.
@@ -1434,10 +1479,8 @@ function copyHtml() {
       let s = cloneEl.getAttribute('style') || '';
       if (s && !s.endsWith(';')) s += ';';
       for (const prop of copyProps) {
-        const val = computed.getPropertyValue(prop);
-        if (val && val !== 'initial' && val !== 'unset' && val !== 'inherit') {
-          s += prop + ':' + val + ';';
-        }
+        const val = cleanValue(prop, computed.getPropertyValue(prop));
+        if (val) s += prop + ':' + val + ';';
       }
       cloneEl.setAttribute('style', s);
     } catch(e) {}
@@ -1452,21 +1495,26 @@ function copyHtml() {
     if (origUrl) img.setAttribute('src', origUrl);
   });
 
-  // 5. Extract #wenyan background/padding for the outer <section> wrapper
+  // 5. Extract #wenyan 背景 / 前景色 / padding 到外层 <section>
+  //    §4.1.1：容器同时声明背景色与文字色，保证 Dark Mode 下对比度关系明确。
   let bgInline = '';
   const wenyanMatch = themeCss.match(/#wenyan\s*\{([^}]*)\}/);
   if (wenyanMatch) {
     const block = wenyanMatch[1];
     const bgProps = ['background', 'background-color', 'background-image', 'background-size',
-                     'background-repeat', 'background-position', 'background-attachment', 'padding'];
+                     'background-repeat', 'background-position', 'background-attachment',
+                     'color', 'padding'];
     for (const prop of bgProps) {
-      const re = new RegExp(prop + '\\s*:\\s*([^;]+);');
+      const re = new RegExp('(?:^|[;{\\s])' + prop + '\\s*:\\s*([^;}]+)');
       const m = block.match(re);
-      if (m) bgInline += prop + ':' + m[1].trim() + ';';
+      // 值里可能含 url("data:image/svg+xml,…")，其中的 " 会**提前闭合 style 属性**，
+      // 导致该属性后半段（含 color / padding）被浏览器丢弃 → 必须转义为 &quot;
+      if (m) bgInline += prop + ':' + m[1].trim().replace(/"/g, '&quot;') + ';';
     }
   }
 
-  const fullHtml = `<section style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.75; font-size: 17px;${bgInline}">
+  // §3：不设置 font-family，交给平台默认字体栈
+  const fullHtml = `<section style="line-height: 1.75; font-size: 17px;${bgInline}">
 ${clone.innerHTML}
 </section>`;
 
@@ -1543,22 +1591,34 @@ function injectPseudoElements(clone, themeCss) {
           span.className = 'pseudo-' + pseudoType;
 
           // Build inline style: copy all props except position-related ones
+          // §3 规范不建议设置 font-family，伪元素同样不输出
           let styleText = '';
           for (let j = 0; j < rule.style.length; j++) {
             const prop = rule.style[j];
             if (prop === 'content') continue;
-            if (/^(position|top|left|right|bottom|z-index|transform|float|clear)$/i.test(prop)) continue;
+            if (/^(position|top|left|right|bottom|z-index|transform|float|clear|font-family)$/i.test(prop)) continue;
             styleText += prop + ':' + rule.style.getPropertyValue(prop) + ';';
           }
           span.style.cssText = styleText;
 
           // Handle content: url(...) → <img>
-          const urlMatch = contentVal.match(/url\(["']?([^"')]+)["']?\)/);
-          if (urlMatch) {
+          // 注意：data:image/svg+xml 的 URI 内部常含 ")"（如 translate(-50%)、rgba(...)），
+          // 因此必须按引号配对取值，不能用 [^)]+ 这类会提前截断的写法，
+          // 否则匹配失败会走到文本分支，把整条 data-URI 当正文文字输出。
+          const urlMatch = contentVal.match(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^)]*))\s*\)/);
+          const urlValue = urlMatch
+            ? (urlMatch[1] !== undefined ? urlMatch[1]
+               : urlMatch[2] !== undefined ? urlMatch[2]
+               : urlMatch[3] !== undefined ? urlMatch[3] : '')
+            : null;
+          if (urlValue) {
             const img = document.createElement('img');
-            img.src = urlMatch[1];
+            img.src = urlValue;
             img.style.cssText = styleText;
             span.appendChild(img);
+          } else if (contentVal.includes('url(')) {
+            // 含 url() 但解析失败 → 宁可跳过，也绝不把原始 URI 当文字输出
+            return;
           } else {
             // content: "text" → text node
             const txt = contentVal.replace(/^["']|["']$/g, '');

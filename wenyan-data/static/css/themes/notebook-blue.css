@@ -5,7 +5,6 @@
  */
 /* 全局属性 */
 #wenyan {
-    font-family: var(--sans-serif-font);
     line-height: 1.75;
     font-size: 16px;
     color: #333333;
@@ -203,7 +202,6 @@
 /* 行内代码 */
 #wenyan p code,
 #wenyan li code {
-    font-family: var(--monospace-font);
     color: #2B6CB0;
     background-color: #e8f0fe;
     padding: 3px 6px;
@@ -223,7 +221,6 @@
 }
 /* 代码块 */
 #wenyan pre code {
-    font-family: var(--monospace-font);
     display: block;
     overflow-x: auto;
     margin: 0;

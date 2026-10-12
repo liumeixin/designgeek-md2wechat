@@ -1,15 +1,16 @@
 services:
   wenyan-editor:
+    image: ghcr.io/liumeixin/design-shi-md2wechat:latest
     build: .
-    container_name: wenyan-editor-win
+    container_name: design-shi-md2wechat
     restart: unless-stopped
     ports:
       - "18888:8080"
     volumes:
       - ./frontend:/app/frontend:ro
       - ./backend:/app/backend:ro
-      - ./scripts:/app/scripts:ro
       - ./wenyan-data:/app/data
     environment:
+      # 容器内固定监听 8080（与 Dockerfile 的 EXPOSE / 端口映射保持一致）
       - PORT=8080
       - HOST=0.0.0.0

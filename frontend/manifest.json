@@ -37,10 +37,6 @@
       "name": "Grass 草地"
     },
     {
-      "id": "grass-nobg",
-      "name": "草地无装饰 Grass Clean"
-    },
-    {
       "id": "lavender-purple",
       "name": "Lavender 薰衣草"
     },
@@ -55,6 +51,10 @@
     {
       "id": "notebook-blue",
       "name": "笔记蓝 Notebook Blue"
+    },
+    {
+      "id": "notebook-purple",
+      "name": "笔记紫 Notebook Purple"
     },
     {
       "id": "parrotalk",

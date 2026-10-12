@@ -6,6 +6,8 @@
 
 用法: python app.py
 访问: http://localhost:18888
+
+端口可用环境变量 PORT 覆盖（容器里 docker-compose 传 PORT=8080）。
 """
 
 import os
@@ -21,6 +23,13 @@ BACKEND_DIR = Path(__file__).parent
 FRONTEND_DIR = BACKEND_DIR / '..' / 'frontend'
 THEMES_DIR = BACKEND_DIR / "static" / "css" / "themes"
 CUSTOM_THEMES_FILE = Path(os.environ.get("DATA_DIR", str(BACKEND_DIR))) / "custom_themes.json"
+
+# Playwright 截图脚本路径（桌面端 / 容器共用同一份 app.py）：
+#   桌面端 —— 仓库内的 scripts/html2png.mjs 存在，直接用；
+#   容器   —— scripts/ 既不打进镜像也不挂载，自动回落到容器内置路径。
+_LOCAL_PW_SCRIPT = BACKEND_DIR / '..' / 'scripts' / 'html2png.mjs'
+PW_SCRIPT = str(_LOCAL_PW_SCRIPT) if _LOCAL_PW_SCRIPT.exists() \
+    else '/opt/data/scripts_node/pw_runtime/html2png.mjs'
 
 app = Flask(__name__, template_folder=str(FRONTEND_DIR))
 
@@ -214,9 +223,9 @@ def screenshot_api():
             f.write(html_content)
         
         # 调用 playwright 截图
-        print(f"[screenshot] Running playwright...")
+        print(f"[screenshot] Running playwright: {PW_SCRIPT}")
         result = subprocess.run(
-            ['node', str(BACKEND_DIR / '..' / 'scripts' / 'html2png.mjs'), 
+            ['node', PW_SCRIPT,
              html_path, output_path, str(width), str(height)],
             capture_output=True,
             text=True,

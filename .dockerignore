@@ -1,0 +1,21 @@
+.git/
+.github/
+.venv/
+__pycache__/
+*.pyc
+*.bak
+*.bak.*
+
+# 桌面端专属：不进镜像，也不进构建上下文
+*.bat
+*.vbs
+tray.py
+requirements.txt
+docs/
+scripts/
+README.md
+AGENTS.md
+LICENSE
+
+# frontend 里的历史备份（COPY frontend/ 会带上，显式排除）
+frontend/*.bak*

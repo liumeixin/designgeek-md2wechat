@@ -3,3 +3,5 @@ __pycache__/
 custom_themes.json
 *.egg-info/
 .env
+.venv/
+venv/

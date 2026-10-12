@@ -7,7 +7,9 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # 写死镜像名（不用 ${{ github.repository }}）—— 这样仓库改名 / 合并后
+  # 镜像名保持稳定，下游（NAS 的 docker-compose）无需跟着改。
+  IMAGE_NAME: liumeixin/design-shi-md2wechat
 
 jobs:
   build-and-push:

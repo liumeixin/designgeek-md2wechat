@@ -152,9 +152,10 @@ def parse_markdown_for_wechat(md: str) -> str:
     html = re.sub(r'<style[^>]*>[\s\S]*?</style>', '', html, flags=re.IGNORECASE)
 
     # 2. 给 <div id="wenyan"> 加内联样式
+    #    规范 §3：不建议设置任何 font-family，平台默认字体栈已最优，故不声明字体族。
     html = re.sub(
         r'<div id="wenyan">',
-        '<div id="wenyan" style="max-width:700px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,\'PingFang SC\',\'Hiragino Sans GB\',\'Microsoft YaHei\',sans-serif;line-height:1.75;font-size:16px;color:#333;word-break:break-word;">',
+        '<div id="wenyan" style="max-width:700px;margin:0 auto;line-height:1.75;font-size:16px;color:#333;word-break:break-word;">',
         html
     )
 

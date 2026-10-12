@@ -317,7 +317,6 @@ def build():
         "notebook-purple": "笔记紫 Notebook Purple",
         "notebook-blue": "笔记蓝 Notebook Blue",
         "dark-green": "暗夜绿 Dark Green",
-        "grass-nobg": "草地无装饰 Grass Clean",
         "ugreen": "UGREEN 绿联杂志",
     }
 
@@ -350,8 +349,8 @@ def build():
                     theme_css_js[name] = css
         except (json.JSONDecodeError, Exception):
             pass
-    (OUTPUT / "themes.json").write_text(json.dumps(theme_css_js, ensure_ascii=False), encoding='utf-8')
-    (OUTPUT / "dimensions.json").write_text(json.dumps(dim_css_js, ensure_ascii=False), encoding='utf-8')
+    (OUTPUT / "themes.json").write_text(json.dumps(theme_css_js, ensure_ascii=False, indent=2), encoding='utf-8')
+    (OUTPUT / "dimensions.json").write_text(json.dumps(dim_css_js, ensure_ascii=False, indent=2), encoding='utf-8')
     (OUTPUT / "manifest.json").write_text(json.dumps({
         "themes": [{"id": t, "name": theme_display.get(t, t)} for t in theme_names],
         "dimensions": [{"id": k, "name": v["name"], "icon": v["icon"]} for k, v in DIMENSIONS.items()],

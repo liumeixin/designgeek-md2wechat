@@ -9,9 +9,14 @@ if %errorlevel%==0 (
     exit /b
 )
 
-:: 使用完整路径运行 Python
 cd /d "%~dp0"
-"C:\Users\liume\AppData\Local\hermes\hermes-agent\venv\Scripts\python.exe" tray.py
+
+:: 优先用仓库自带的 .venv，没有则回落到系统 python
+set "PY=%~dp0.venv\Scripts\python.exe"
+if not exist "%PY%" set "PY=python"
+
+:: 托盘方式静默启动
+"%PY%" tray.py
 
 :: 打开浏览器
 timeout /t 3 /nobreak >nul
