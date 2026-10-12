@@ -130,6 +130,8 @@
 - 新增 `.dockerignore`；`.gitignore` 补 `.venv/`。
 - 修正 `文颜排版器.bat`：原指向已退役的 Hermes venv 路径（**文件已不存在，启动器是坏的**），
   改为优先用仓库 `.venv`、回落到系统 `python`。
+- 补 `requirements.txt` 缺失的托盘依赖（`pystray` / `pillow`）——
+  原文件只有 `flask`，这正是旧 `.bat` 要去借 Hermes venv 的原因。
 - 删除 `scripts/sync_docker_from_win.py`（合并后不再需要）。
 - 删除历史备份 `frontend/themes.json.bak`、`frontend/index.html.bak.202607051732`。
 - 新增 `scripts/commit_and_push.py`。

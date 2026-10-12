@@ -36,6 +36,7 @@
 
 - Python 3.8+（[下载](https://www.python.org/downloads/)）
 - Node.js（截图功能需要，[下载](https://nodejs.org/)）
+- Python 依赖：`pip install -r requirements.txt`（flask + pystray + pillow）
 
 ### 启动
 
