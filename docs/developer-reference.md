@@ -44,7 +44,7 @@ python scripts/check_wechat_spec.py out.html --contrast   # 静态自检，退�
 ## 项目结构（2026-10-12）
 
 ```
-design-shi-md2wechat/                     # 单仓库（桌面端 + 容器共用）
+designgeek-md2wechat/                     # 单仓库（桌面端 + 容器共用）
 ├── .github/workflows/docker-publish.yml  # GHCR 自动构建（IMAGE_NAME 已写死）
 ├── .dockerignore                         # 构建上下文排除（挡 .venv / *.bak / 桌面端文件）
 ├── Dockerfile                            # 薄容器（不含 Playwright）
@@ -67,8 +67,8 @@ design-shi-md2wechat/                     # 单仓库（桌面端 + 容器共用
 ```
 
 ### 关键路径映射
-- Gitea 仓库：`Agent/design-shi-md2wechat`（`https://dx4700-gitea.tocmcc.cn`）
-- Docker 镜像：`ghcr.io/liumeixin/design-shi-md2wechat:latest`
+- Gitea 仓库：`Agent/designgeek-md2wechat`（`https://dx4700-gitea.tocmcc.cn`）
+- Docker 镜像：`ghcr.io/liumeixin/designgeek-md2wechat:latest`
 - 端口：桌面端 **18888**；容器内 **8080**，映射宿主 `18888:8080`
 - ⚠️ 旧值已作废：`liumeixin/wenyan-editor`、`ghcr.io/liumeixin/wenyan-data`、
   以及「NAS 18080 → 容器 8080」的旧部署口径。

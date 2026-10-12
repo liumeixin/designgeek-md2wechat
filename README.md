@@ -67,7 +67,7 @@ docker compose up -d --build
 
 访问 <http://localhost:18888>（容器内监听 8080，映射到宿主 18888）。
 
-镜像：`ghcr.io/liumeixin/design-shi-md2wechat:latest`
+镜像：`ghcr.io/liumeixin/designgeek-md2wechat:latest`
 
 > 容器是**薄镜像**：只打包 `backend/` + `frontend/`，主题与数据靠卷挂载，
 > 改主题 CSS **不需要重建镜像**。容器相关文件只有 `Dockerfile` + `docker-compose.yml`。

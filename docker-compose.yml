@@ -1,8 +1,8 @@
 services:
   wenyan-editor:
-    image: ghcr.io/liumeixin/design-shi-md2wechat:latest
+    image: ghcr.io/liumeixin/designgeek-md2wechat:latest
     build: .
-    container_name: design-shi-md2wechat
+    container_name: designgeek-md2wechat
     restart: unless-stopped
     ports:
       - "18888:8080"

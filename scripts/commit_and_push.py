@@ -34,7 +34,7 @@ CHANNEL_BASES = (
     "https://dx4700-gitea.tocmcc.cn",   # 主：DDNSTO
     "https://dx4700-gitea.iepose.cn",   # 备：节点小宝（2 Mbps / 1014 MB 每月）
 )
-DEFAULT_REPO_PATH = "/Agent/design-shi-md2wechat.git"
+DEFAULT_REPO_PATH = "/Agent/designgeek-md2wechat.git"
 BRANCH = "main"
 
 PROXY_KEYS = ("http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY",

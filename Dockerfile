@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-LABEL maintainer="design-shi"
+LABEL maintainer="designgeek"
 LABEL description="文颜 Markdown 排版器 md2wechat"
 
 WORKDIR /app

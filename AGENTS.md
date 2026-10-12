@@ -69,7 +69,7 @@
 
 ### 容器（薄镜像）
 
-- 镜像名 **写死在 workflow 里**（`IMAGE_NAME: liumeixin/design-shi-md2wechat`），
+- 镜像名 **写死在 workflow 里**（`IMAGE_NAME: liumeixin/designgeek-md2wechat`），
   不用 `${{ github.repository }}` —— 这样仓库改名后镜像名保持稳定，下游无需跟着改。
 - 镜像只打包 `backend/` + `frontend/`；`frontend/`、`backend/` 以**只读卷**挂载，
   `wenyan-data/` 为读写卷。**改主题 CSS 不需要重建镜像。**
@@ -121,10 +121,10 @@
 
 ## 变更日志
 
-### 2026-10-12（傍晚）：合并为单仓库 `design-shi-md2wechat`
+### 2026-10-12（傍晚）：合并为单仓库 `designgeek-md2wechat`
 
 - 仓库由 `wenyan-editor-win` + `wenyan-editor-docker` 合并为单仓库
-  **`design-shi-md2wechat`**，镜像名同步为 `ghcr.io/liumeixin/design-shi-md2wechat`。
+  **`designgeek-md2wechat`**，镜像名同步为 `ghcr.io/liumeixin/designgeek-md2wechat`。
 - 删除 win 侧的 WSL 遗留 `Dockerfile` / `docker-compose.yml`，改用薄容器版。
 - `backend/app.py`：playwright 路径改自动探测（桌面端/容器共用一份）。
 - 新增 `.dockerignore`；`.gitignore` 补 `.venv/`。
