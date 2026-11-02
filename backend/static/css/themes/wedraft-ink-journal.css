@@ -1,0 +1,74 @@
+/* 墨刊 · 黑白刊物 · 深度报道与人物
+ * 移植自 pafa/WeDraft 的 reading-editions.ts（MIT）
+ * 生成工具：D:/aiwork/scripts/_out/wedraft2theme.py
+ * 标 ⚠ 的选择器需要渲染器吐出对应 class/标签，当前尚未产出，先占位。
+ */
+
+#wenyan { font-size: 16px; line-height: 1.84; font-weight: 400; letter-spacing: 0; text-align: left; overflow-wrap: break-word; color: #3C3C3A; }
+
+#wenyan p { font-size: 16px; line-height: 1.84; font-weight: 400; letter-spacing: 0; text-align: left; overflow-wrap: break-word; color: #3C3C3A; margin: 0 8px 24px; }
+
+#wenyan h2 { font-size: 22px; line-height: 1.55; font-weight: 600; letter-spacing: 0; color: #272727; margin: 0 8px 20px; }
+
+/* ⚠ 待渲染器支持：headingNumber */
+#wenyan h2 .sec-num { font-size: 12px; font-weight: 400; line-height: 1.4; letter-spacing: 0; color: #272727; margin-bottom: 6px; text-indent: 0; margin-right: 6px; }
+
+/* ⚠ 待渲染器支持：headingText */
+#wenyan h2 .sec-text { display: inline; }
+
+#wenyan h3 { font-size: 17px; line-height: 1.7; font-weight: 600; letter-spacing: 0; color: #272727; margin: 26px 8px 12px; }
+
+#wenyan blockquote { font-size: 17px; line-height: 1.85; font-weight: 400; letter-spacing: 0; text-align: left; overflow-wrap: break-word; color: #3C3C3A; border-left: 1px solid #B6B6B2; background-color: #FFFFFF; padding: 6px 0 6px 24px; text-indent: -16px; margin: 26px 8px; }
+
+/* ⚠ 待渲染器支持：quoteMark */
+#wenyan blockquote .quote-mark { display: inline-block; width: 16px; font-size: 22px; line-height: 1; font-weight: 600; text-indent: 0; color: #272727; vertical-align: -2px; }
+
+#wenyan blockquote strong { font-weight: 600; color: #3C3C3A; }
+
+#wenyan img { display: block; width: calc(100% - 16px); height: auto; margin: 26px 8px 8px; }
+
+/* ⚠ 待渲染器支持：caption */
+#wenyan figcaption,
+#wenyan .caption { font-size: 12px; line-height: 1.65; color: #73736F; text-align: right; overflow-wrap: break-word; margin: 0 8px 26px; }
+
+#wenyan a { color: #272727; text-decoration: underline; }
+
+#wenyan hr { border: 0; border-top: 1px solid #464644; width: calc(100% - 16px); font-size: 0; line-height: 0; height: 0; margin: 34px auto 16px; }
+
+#wenyan strong,
+#wenyan b { color: #3C3C3A; font-weight: 700; }
+
+#wenyan ul,
+#wenyan ol { padding-left: 1.25em; margin: 18px 8px 24px; }
+
+#wenyan li { font-size: 16px; line-height: 1.84; font-weight: 400; letter-spacing: 0; text-align: left; overflow-wrap: break-word; color: #3C3C3A; margin: 0 0 6px; }
+
+/* ⚠ 待渲染器支持：note */
+#wenyan .note { font-size: 13px; line-height: 1.8; color: #73736F; text-align: left; margin: 12px 8px 22px; }
+
+#wenyan pre { font-family: Menlo,Consolas,monospace; font-size: 13px; line-height: 1.75; color: #3C3C3A; background-color: #F8F8F6; border: 0; padding: 14px 16px; margin: 24px 8px 26px; white-space: pre-wrap; word-break: break-word; border-left: 1px solid #CFCFCB; }
+
+/* ⚠ 待渲染器支持：references */
+#wenyan .references { padding: 2px 0 4px; margin: 0 8px 22px; }
+
+/* ⚠ 待渲染器支持：referenceTitle */
+#wenyan .references .ref-title { font-size: 13px; line-height: 1.6; font-weight: 600; letter-spacing: 0; color: #272727; margin: 0 0 14px; }
+
+/* ⚠ 待渲染器支持：referenceItem */
+#wenyan .references p { font-size: 13px; line-height: 1.8; color: #73736F; padding-left: 22px; text-indent: -22px; margin: 0 0 8px; overflow-wrap: anywhere; }
+
+/* ⚠ 待渲染器支持：referenceNumber */
+#wenyan .references .ref-num { font-size: 12px; font-weight: 400; font-variant-numeric: tabular-nums; text-indent: 0; color: #73736F; margin-right: 6px; }
+
+/* ⚠ 待渲染器支持：tableWrapper */
+#wenyan .table-wrap { margin: 24px 8px 28px; border-top: 1px solid #60605C; }
+
+#wenyan table { display: table; width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
+
+#wenyan table th { font-size: 13.5px; line-height: 1.65; font-weight: 600; letter-spacing: 0; font-variant-numeric: tabular-nums; color: #303030; background-color: #FFFFFF; padding: 10px 8px; text-align: left; vertical-align: middle; border-bottom: 1px solid #B7B7B2; overflow-wrap: anywhere; }
+
+#wenyan table td { font-size: 13.5px; line-height: 1.7; font-weight: 400; letter-spacing: 0; font-variant-numeric: tabular-nums; color: #3C3C3A; background-color: #FFFFFF; padding: 10px 8px; text-align: left; vertical-align: middle; border-bottom: 1px solid #E2E2DD; overflow-wrap: anywhere; }
+
+#wenyan table tr:nth-child(2n) td { font-size: 13.5px; line-height: 1.7; font-weight: 400; letter-spacing: 0; font-variant-numeric: tabular-nums; color: #3C3C3A; background-color: #FFFFFF; padding: 10px 8px; text-align: left; vertical-align: middle; border-bottom: 1px solid #E2E2DD; overflow-wrap: anywhere; }
+
+/* 未生效槽位（共 10）：headingNumber, headingText, quoteMark, caption, note, references, referenceTitle, referenceItem, referenceNumber, tableWrapper */

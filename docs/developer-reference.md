@@ -253,15 +253,46 @@ document.body.removeChild(tmp);
 
 | 类别 | 属性 | 说明 |
 |---|---|---|
-| 全局白名单 | `color` `font-size` `font-weight` `font-style` `font-family` `letter-spacing` `text-align` `text-decoration(-line)` `background-*` `border` `border-radius` `box-shadow` `opacity` `vertical-align` | 逐元素取 `getComputedStyle` 内联 |
-| **定向白名单**（2026-10-12 新增） | `border-collapse` → 仅 `<table>`；`list-style-type` → 仅 `ul/ol/li`；`padding` → `blockquote`/`pre`/`code`；`line-height` → `blockquote`/`pre`；`display` + `overflow-x` → **代码块上下文**（`<pre>` 及其内部 `<code>`） | 见下 |
-| 永不内联 | `margin` `width` `height` `position` `z-index` `float` | 固定宽高会让公众号编辑器报「不同屏幕下宽度差异 / 居中不一致」；`display` 全局内联会导致正文文字重叠 |
+| 全局白名单 | `color` `font-size` `font-weight` `font-style` `font-family` `letter-spacing` `text-align` `text-decoration(-line)` `background-*` `border` `border-radius` `box-shadow` `opacity` `vertical-align` `margin` `padding` `text-indent` | 逐元素取 `getComputedStyle` 内联 |
+| **定向白名单** | `border-collapse` / `border-spacing` / `table-layout` / `width:100%` → 仅 `<table>`；`list-style-type` → 仅 `ul/ol/li`；`line-height` → `blockquote`/`pre`；`display` + `overflow-x` → **代码块上下文**；`max-width` + `display` → 仅 `<img>`；`overflow:hidden` → 仅 `.table-wrap` | 见下 |
+| 永不内联 | `width`（除 table 的 `100%`）、`height`、`position`、`z-index`、`float` | 固定宽高会让公众号编辑器报「不同屏幕下宽度差异 / 居中不一致」；`display` 全局内联会导致正文文字重叠 |
 
+- **`margin` / `padding` / `text-indent`（2026-11-02 改为全量放行）**：此前三者被排除，
+  导致预览与粘贴结果**纵向节奏完全不一致**（主题里 13 条 margin 声明一条都到不了公众号），
+  且悬挂缩进只有负 `text-indent`、没有 `padding-left` 补偿 → 文字左移出框。全零由
+  `NOOP_RULES` 丢弃；`text-indent` 在行内元素上跳过（它只对块级容器生效，继承下来是噪音）。
+- **`width` 一律不用 computed 值**：`getComputedStyle().width` 返回的是**已解析的 px 使用值**，
+  内联进公众号就是固定宽度（§1.4 禁止）。所以：
+  - `<table>` 直接写 `width:100%`（19 个主题全都这么声明）
+  - `<img>` 写 `max-width: calc(100% - 左右外边距)`，把主题的 `width:calc(100% - 16px)` 意图保下来
 - **`border-<方向>`**：只有与 `border` 简写**不同**时才输出（表格单元格因此省掉 4/5 的边框声明）。
 - **代码块长行**：按用户 2026-10-12 拍板采用**横向滚动**（`overflow-x:auto`，不换行），
   与主题 `#wenyan pre code { display:block; overflow-x:auto }` 的意图一致。
 - **`NOOP_RULES`**：计算值等于属性初始值的声明会被丢弃（`border-collapse:separate`、
-  `padding:0`、`line-height:normal`、`background-image:none` …），避免导出臃肿。
+  `margin:0px`、`padding:0`、`text-indent:0px`、`line-height:normal`、`background-image:none` …），
+  避免导出臃肿。
+
+### 语义槽位（2026-11-02 新增）
+
+主题 CSS 只能给**已存在的结构**上样式。以下 5 类结构 `marked` 不会产出，由
+`frontend/index.html` 的 `enhanceWechatHtml()` 在预览 DOM 上补齐（借鉴 pafa/WeDraft 的槽位模型）：
+
+| 结构 | 触发条件 | 产出 |
+|---|---|---|
+| 表格容器 | 任意 `<table>` | 外包 `<section class="table-wrap">`（承载圆角 / 顶部粗线 / `overflow:hidden`） |
+| 图注 | 图片后紧跟的一段，以「图：/来源：/图片来源：」开头，或整段只有一个 `<em>` | `<figcaption class="caption">` |
+| 说明段 | 段首匹配 `注：/说明：/参考：/来源：/资料来源：/数据来源：/作者：/编辑：` | `<p class="note">` |
+| 章节编号 | `<h2>` 原本就带 `1.` / `1、` / `1．` 前缀（**不凭空加编号**） | `<h2 class="is-numbered"><span class="sec-num">01</span><span class="sec-text">…</span></h2>` |
+| 参考来源 | `<h2>` 文本为「参考来源 / 参考资料 / 参考文献 / References」且紧邻一个列表 | `<section class="references">` + `.ref-title` + 逐条 `.ref-num` |
+
+⚠️ 编号列**不用定宽对齐**：`width` 内联不出去（§1.4），而编号补零后天然等宽，改用 `margin-right`。
+
+### 出口清洗 `sanitizeWechatHtml()`
+
+`copyHtml()` 的最后一道闸：标签白名单 + 属性白名单 + 协议白名单。
+危险标签（`script`/`style`/`iframe`/`object`/`svg`/`form`…）整棵删除；未在白名单内的标签只拆壳保留文字；
+`on*` 事件属性一律移除；`javascript:` / `vbscript:` / `data:text/html` 的 `href`/`src` 置空。
+**这是属性白名单之外的独立一层** —— 此前只过滤属性、完全不过滤标签。
 
 > 🔴 改这张白名单**必须**用真实浏览器跑一遍导出再复检，纯静态看代码判断不出来：
 > ```bash
@@ -269,7 +300,8 @@ document.body.removeChild(tmp);
 > node D:/aiwork/scripts/_out/export_probe.cjs http://127.0.0.1:8899/index.html ugreen sample.md out.html
 > python scripts/check_wechat_spec.py out.html --contrast
 > ```
-> 依据与实测数据 → `docs/微信编辑器规范复核-表格引用代码-2026-10-12.md`。
+> 依据与实测数据 → `docs/微信编辑器规范复核-表格引用代码-2026-10-12.md`、
+> `docs/WeDraft借鉴评估-2026-11-02.md`。
 
 ## 图片代理（CORS 修复）
 

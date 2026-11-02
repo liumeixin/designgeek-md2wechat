@@ -318,6 +318,12 @@ def build():
         "notebook-blue": "笔记蓝 Notebook Blue",
         "dark-green": "暗夜绿 Dark Green",
         "ugreen": "UGREEN 绿联杂志",
+        # 2026-11-02：移植自 pafa/WeDraft（MIT）的 5 套阅读模板
+        "wedraft-plain-paper": "素笺 暖灰留白",
+        "wedraft-ink-journal": "墨刊 黑白刊物",
+        "wedraft-jade-notes": "青岚 松青书页",
+        "wedraft-blueprint": "蓝图 理性蓝调",
+        "wedraft-cinnabar": "朱砂 砖红篇章",
     }
 
     # Generate theme CSS map as JS

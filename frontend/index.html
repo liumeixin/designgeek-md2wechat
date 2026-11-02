@@ -556,6 +556,161 @@ function resetAllDimensions() {
 }
 
 // ========== MARKDOWN RENDERING ==========
+
+// ── 公众号语义增强（2026-11-02，借鉴 pafa/WeDraft 的槽位模型，MIT）──────────
+// 主题 CSS 只能给「已经存在的结构」上样式。图注、说明段、章节编号、参考来源
+// 这四类内容层结构，marked 不会产出，主题里写了选择器也永远不生效 ——
+// 所以在预览 DOM 上补一层结构，导出时 getComputedStyle 自然带得出来。
+// 用 DOMParser 而不是字符串正则：正则改结构会把行内 <strong>/<a> 冲掉。
+const CAPTION_PREFIX = /^(图|图示|图片来源|资料来源|数据来源|来源)[：:]\s*/;
+const NOTE_PREFIX = /^(注|说明|参考|来源|资料来源|数据来源|作者|编辑)[：:]/;
+const REF_TITLE_RE = /^(参考来源|参考资料|参考文献|references?)$/i;
+const H2_NUM_RE = /^\s*(\d+)\s*[.．、]\s*/;
+
+function enhanceWechatHtml(html) {
+  const doc = new DOMParser().parseFromString(
+    '<div id="__wb_root">' + html + '</div>', 'text/html');
+  const root = doc.getElementById('__wb_root');
+  if (!root) return html;
+
+  // ① 表格外层容器：承载圆角 / 顶部粗线 / overflow:hidden
+  root.querySelectorAll('table').forEach(t => {
+    const p = t.parentElement;
+    if (p && p.classList.contains('table-wrap')) return;
+    const wrap = doc.createElement('section');
+    wrap.className = 'table-wrap';
+    t.parentNode.insertBefore(wrap, t);
+    wrap.appendChild(t);
+  });
+
+  // ② 图注：图片后紧跟的一段，满足「以 图：/来源： 开头」或「整段只有一个 <em>」
+  root.querySelectorAll('img').forEach(img => {
+    const p = img.parentElement;
+    const holder = (p && p.tagName === 'P' && p.children.length === 1) ? p : img;
+    const next = holder.nextElementSibling;
+    if (!next || next.tagName !== 'P' || next.classList.contains('note')) return;
+    const text = next.textContent.trim();
+    if (!text || text.length > 120) return;
+    const onlyEm = next.children.length === 1 &&
+                   next.firstElementChild.tagName === 'EM';
+    if (!CAPTION_PREFIX.test(text) && !onlyEm) return;
+    const fig = doc.createElement('figcaption');
+    fig.className = 'caption';
+    fig.textContent = text.replace(CAPTION_PREFIX, '');
+    next.parentNode.replaceChild(fig, next);
+  });
+
+  // ③ 说明段：段首「注：/来源：/作者：」等前缀 → 更小更灰的样式
+  root.querySelectorAll('p').forEach(p => {
+    if (p.className || !p.textContent.trim()) return;
+    if (NOTE_PREFIX.test(p.textContent.trim())) p.className = 'note';
+  });
+
+  // ④ 章节自动编号：只处理**原本就带数字前缀**的 h2，不凭空加编号。
+  //    剥离在文本节点层做，保留行内 <strong>/<a>。
+  root.querySelectorAll('h2').forEach(h => {
+    const m = h.textContent.match(H2_NUM_RE);
+    if (!m) return;
+    let left = m[0].length;
+    const walker = doc.createTreeWalker(h, NodeFilter.SHOW_TEXT);
+    while (left > 0) {
+      const node = walker.nextNode();
+      if (!node) break;
+      if (node.nodeValue.length <= left) {
+        left -= node.nodeValue.length;
+        node.nodeValue = '';
+      } else {
+        node.nodeValue = node.nodeValue.slice(left);
+        left = 0;
+      }
+    }
+    const num = doc.createElement('span');
+    num.className = 'sec-num';
+    num.textContent = String(parseInt(m[1], 10)).padStart(2, '0');
+    const body = doc.createElement('span');
+    body.className = 'sec-text';
+    while (h.firstChild) body.appendChild(h.firstChild);
+    h.appendChild(num);
+    h.appendChild(body);
+    h.classList.add('is-numbered');
+  });
+
+  // ⑤ 参考来源：标题匹配 + 紧邻一个列表 → 包成 .references，逐条加编号。
+  //    原 h2 由 .ref-title 取代，避免标题出现两次。
+  root.querySelectorAll('h2').forEach(h => {
+    const title = ((h.querySelector('.sec-text') || h).textContent || '').trim();
+    if (!REF_TITLE_RE.test(title)) return;
+    const list = h.nextElementSibling;
+    if (!list || (list.tagName !== 'UL' && list.tagName !== 'OL')) return;
+    const sec = doc.createElement('section');
+    sec.className = 'references';
+    const t = doc.createElement('p');
+    t.className = 'ref-title';
+    t.textContent = title;
+    sec.appendChild(t);
+    [...list.children].forEach((li, i) => {
+      const p = doc.createElement('p');
+      const n = doc.createElement('span');
+      n.className = 'ref-num';
+      n.textContent = String(i + 1).padStart(2, '0');
+      p.appendChild(n);
+      while (li.firstChild) p.appendChild(li.firstChild);
+      sec.appendChild(p);
+    });
+    h.parentNode.replaceChild(sec, h);
+    list.remove();
+  });
+
+  return root.innerHTML;
+}
+
+// ── 出口清洗（2026-11-02，借鉴 pafa/WeDraft 的 sanitizeWechatHtml，MIT）──────
+// 此前导出只过滤「属性」（copyProps 白名单），**完全不过滤标签** ——
+// 用户 Markdown 里贴进来的 <script>/<iframe>/on* 事件属性会原样进剪贴板。
+// 这里是结构层的最后一道闸：标签白名单 + 属性白名单 + 协议白名单。
+const WX_DROP_TAGS = new Set(['script', 'style', 'iframe', 'object', 'embed', 'link',
+  'meta', 'base', 'form', 'input', 'button', 'textarea', 'select', 'option',
+  'svg', 'math', 'video', 'audio', 'canvas', 'noscript', 'template']);
+const WX_ALLOWED_TAGS = new Set(['section', 'p', 'span', 'strong', 'b', 'em', 'i', 'u', 's',
+  'del', 'mark', 'sub', 'sup', 'small', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+  'hr', 'br', 'img', 'ul', 'ol', 'li', 'a', 'pre', 'code', 'kbd', 'samp', 'var',
+  'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption',
+  'figure', 'figcaption', 'div', 'abbr', 'cite', 'q', 'time', 'label']);
+const WX_ALLOWED_ATTRS = new Set(['style', 'href', 'src', 'alt', 'class',
+  'colspan', 'rowspan', 'title', 'data-orig-url']);
+
+function sanitizeWechatHtml(html) {
+  const doc = new DOMParser().parseFromString(
+    '<div id="__wb_san">' + html + '</div>', 'text/html');
+  const root = doc.getElementById('__wb_san');
+  if (!root) return html;
+
+  // 危险标签整棵删掉（连内容），其余未在白名单内的标签只「拆壳」保留文字
+  root.querySelectorAll('*').forEach(el => {
+    const tag = (el.tagName || '').toLowerCase();
+    if (WX_DROP_TAGS.has(tag)) { el.remove(); return; }
+    if (!WX_ALLOWED_TAGS.has(tag)) {
+      const parent = el.parentNode;
+      if (!parent) return;
+      while (el.firstChild) parent.insertBefore(el.firstChild, el);
+      parent.removeChild(el);
+      return;
+    }
+    for (const attr of [...el.attributes]) {
+      const name = attr.name.toLowerCase();
+      if (name.startsWith('on') || !WX_ALLOWED_ATTRS.has(name)) {
+        el.removeAttribute(attr.name);
+        continue;
+      }
+      if ((name === 'href' || name === 'src') &&
+          /^\s*(javascript|vbscript|data:text\/html)/i.test(attr.value)) {
+        el.removeAttribute(attr.name);
+      }
+    }
+  });
+  return root.innerHTML;
+}
+
 function renderMarkdown() {
   const editor = document.getElementById('editor');
   const preview = document.getElementById('wenyan');
@@ -582,6 +737,9 @@ function renderMarkdown() {
     /<p[^>]*>\s*%EL%\s*<\/p>/gi,
     '<p style="margin:0;padding:0;">&nbsp;</p>'
   );
+
+  // 语义增强：表格容器 / 图注 / 说明段 / 章节编号 / 参考来源
+  htmlContent = enhanceWechatHtml(htmlContent);
 
   preview.innerHTML = htmlContent;
 
@@ -1439,6 +1597,11 @@ function copyHtml() {
     [/^vertical-align$/, /^baseline$/],
     [/^letter-spacing$/, /^normal$/],
     [/^text-decoration(-line)?$/, /^none\b/],
+    // 2026-11-02：margin 改为全量内联（用户拍板）。全零才丢；`0px auto` 这类
+    // 居中写法必须保留 —— auto 是居中语义，丢了图/表就不居中了。
+    [/^margin$/, /^0(px)?(\s+0(px)?)*$/],
+    [/^text-indent$/, /^0(px)?$/],
+    [/^border-spacing$/, /^0(px)?(\s+0(px)?)*$/],
   ];
   const baseFont = getComputedStyle(wenyan).fontFamily;
 
@@ -1499,27 +1662,43 @@ function copyHtml() {
     // （2026-10-12 瘦身：表格单元格每个省 4 条边框声明）。
     'box-shadow', 'opacity',
     'vertical-align',
+    // margin：2026-11-02 起**四个方向全部内联**。此前全局排除，导致预览与
+    // 粘贴结果纵向节奏不一致（主题里 13 条 margin 声明一条都到不了公众号）。
+    // 参考 WeDraft 的做法：模板的段落间距就是靠 margin 表达，不内联等于丢版式。
+    'margin',
+    // text-indent：悬挂缩进（引用块 / 参考来源 / 编号标题）必须靠它，配合 padding-left 用。
+    'text-indent',
+    // padding：2026-11-02 起改为**全局放行**（全零由 NOOP_RULES 丢弃）。
+    // 原先只给 blockquote/pre/code，导致：
+    //   · 表格单元格文字贴边
+    //   · 悬挂缩进只有 text-indent 负值、没有 padding-left 补偿 → 文字左移出框
+    'padding',
     // NOTE: border-collapse 改为「仅 <table> 输出」（见 TABLE_TAGS）——
     // 它是可继承属性，若不限定标签会连带刷到 thead/tbody/tr/th/td 共 17 处。
-    // NOTE: margin 仍全局排除 —— 微信编辑器对段落/列表有自己的间距。
-    // 但 2026-10-12 起改为「按标签定向补」：
-    //   padding      → PAD_TAGS（引用块 / 代码块 / 行内代码）
+    // 其余仍按标签定向补：
+    //   padding      → 全局放行（全零丢弃）
     //   line-height  → LH_TAGS（引用块 / 代码块）
     //   代码块换行兜底 → isCodeBlock（display / overflow-x）
     //   list-style-type → LIST_TAGS（仅 ul/ol/li）
-    // display/width/height 仍全局排除 —— 全局内联 display 会导致正文文字重叠。
+    //   width / table-layout / border-spacing → 仅 table（见 TABLE_TAGS）
+    //   max-width / display → 仅 img（见 IMG_TAGS）
+    //   overflow → 仅 .table-wrap（见 WRAP_TAGS）
+    // display/width/height 仍**不**做全局内联 —— 全局内联 display 会导致正文文字重叠。
   ];
   const BORDER_DIRS = ['border-left', 'border-top', 'border-right', 'border-bottom'];
 
-  // 定向补 padding：主题里 blockquote / pre / 行内 code 都声明了内边距，
-  // 但 padding 被全局排除 → 引用文字贴边框、行内代码底色贴字、代码块文字贴边。
-  const PAD_TAGS = new Set(['blockquote', 'pre', 'code']);
-  // line-height 同理：只在引用块 / 代码块上补回（正文行高交给微信默认）
+  // padding 已全局放行，这里只保留 line-height 的定向规则
   const LH_TAGS = new Set(['blockquote', 'pre']);
   // list-style-type 只对列表元素有意义，其余元素上纯属噪音（实测 40 处/篇）
   const LIST_TAGS = new Set(['ul', 'ol', 'li']);
   // border-collapse 是可继承属性，只该写在 <table> 上
   const TABLE_TAGS = new Set(['table']);
+  // 图片：只补「不固定尺寸」的两条 —— max-width:100% 让图自适应容器宽度，
+  // display:block 配合 margin:auto 居中。**绝不内联 computed width**：
+  // 那是已解析的 px 使用值，内联进公众号就是固定宽度（§1.4 明令禁止）。
+  const IMG_TAGS = new Set(['img']);
+  // 表格外层容器：圆角靠 overflow:hidden 裁切，否则圆角在表格上不生效
+  const WRAP_TAGS = new Set(['table-wrap']);
 
   // §1.8 配套：代码块长行兜底 —— 横向滚动（用户 2026-10-12 拍板）。
   // 主题里 `#wenyan pre code { display:block; overflow-x:auto }` 会被白名单挡掉，
@@ -1544,6 +1723,8 @@ function copyHtml() {
       let s = sanitizeKeptStyle(cloneEl.getAttribute('style') || '', tag);
       if (s && !s.endsWith(';')) s += ';';
       for (const prop of copyProps) {
+        // text-indent 是可继承属性，行内元素继承到负值只是噪音（它只对块级容器生效）
+        if (prop === 'text-indent' && INLINE_TAGS.has(tag)) continue;
         const val = cleanValue(prop, computed.getPropertyValue(prop));
         if (val) s += prop + ':' + val + ';';
       }
@@ -1558,12 +1739,30 @@ function copyHtml() {
         if (v) s += 'list-style-type:' + v + ';';
       }
       if (TABLE_TAGS.has(tag)) {
-        const v = cleanValue('border-collapse', computed.getPropertyValue('border-collapse'));
-        if (v) s += 'border-collapse:' + v + ';';
+        const bc = cleanValue('border-collapse', computed.getPropertyValue('border-collapse'));
+        if (bc) s += 'border-collapse:' + bc + ';';
+        const bs = cleanValue('border-spacing', computed.getPropertyValue('border-spacing'));
+        if (bs) s += 'border-spacing:' + bs + ';';
+        const tl = cleanValue('table-layout', computed.getPropertyValue('table-layout'));
+        if (tl && tl !== 'auto') s += 'table-layout:' + tl + ';';
+        // ⚠️ 这里**不能**用 computed width —— 它返回的是已解析的 px 使用值，
+        // 内联进公众号就是固定宽度（§1.4 明令禁止，也是「不同屏幕下宽度差异」的来源）。
+        // 19 个主题的 `#wenyan table` 全都声明 width:100%，直接给意图值。
+        s += 'width:100%;';
       }
-      if (PAD_TAGS.has(tag)) {
-        const v = cleanValue('padding', computed.getPropertyValue('padding'));
-        if (v) s += 'padding:' + v + ';';
+      if (IMG_TAGS.has(tag)) {
+        // 同理不用 computed width。这里把主题的「左右外边距」折进 max-width 的 calc：
+        // 主题写的是 `width: calc(100% - 16px); margin: 26px 8px 8px`，
+        // 若只给 max-width:100% 再叠 8px 左右外边距 → 总宽超出容器 8px 会横向溢出。
+        // calc 是流体值，不构成 §1.4 的「固定宽度」。
+        const ml = parseFloat(computed.marginLeft) || 0;
+        const mr = parseFloat(computed.marginRight) || 0;
+        const gutter = ml + mr;
+        s += (gutter > 0 ? 'max-width:calc(100% - ' + gutter + 'px);' : 'max-width:100%;');
+        s += 'display:block;';
+      }
+      if (cloneEl.classList && cloneEl.classList.contains('table-wrap')) {
+        s += 'overflow:hidden;';   // 圆角裁切；不支持时浏览器直接忽略，无副作用
       }
       if (LH_TAGS.has(tag)) {
         const v = cleanValue('line-height', computed.getPropertyValue('line-height'));
@@ -1605,9 +1804,10 @@ function copyHtml() {
   }
 
   // §3：不设置 font-family，交给平台默认字体栈
-  const fullHtml = `<section style="line-height: 1.75; font-size: 17px;${bgInline}">
+  // 出口清洗：标签 / 属性 / 协议三层白名单（见 sanitizeWechatHtml）
+  const fullHtml = sanitizeWechatHtml(`<section style="line-height: 1.75; font-size: 17px;${bgInline}">
 ${clone.innerHTML}
-</section>`;
+</section>`);
 
   // 6. Copy to clipboard — try ClipboardItem first, fallback to execCommand
   function showCopyOk() {

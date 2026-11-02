@@ -73,6 +73,26 @@
       "name": "UGREEN 绿联杂志"
     },
     {
+      "id": "wedraft-blueprint",
+      "name": "蓝图 理性蓝调"
+    },
+    {
+      "id": "wedraft-cinnabar",
+      "name": "朱砂 砖红篇章"
+    },
+    {
+      "id": "wedraft-ink-journal",
+      "name": "墨刊 黑白刊物"
+    },
+    {
+      "id": "wedraft-jade-notes",
+      "name": "青岚 松青书页"
+    },
+    {
+      "id": "wedraft-plain-paper",
+      "name": "素笺 暖灰留白"
+    },
+    {
       "id": "winter",
       "name": "Winter 冬日"
     }
