@@ -1,6 +1,6 @@
 # DesignGeek Editor · md2wechat
 
-微信公众号 Markdown 排版工具（品牌：**设计虱 DesignGeek**），支持 19 个主题 × 18 个维度的 CSS 混搭。
+微信公众号 Markdown 排版工具（品牌：**设计虱 DesignGeek**），支持 59 个主题 × 18 个维度的 CSS 混搭。
 **同一份源码同时提供「Windows 桌面端」和「Docker 容器」两种运行方式。**
 
 > 📐 **排版规范**：[微信公众平台编辑器插件开发规范](https://developers.weixin.qq.com/doc/service/guide/product/plugin_spec.html)
@@ -9,7 +9,7 @@
 
 ## ✨ 功能特色
 
-- **19 个主题**：涵盖文艺、科技、商务等多种风格
+- **59 个主题**：涵盖文艺、科技、商务等多种风格（含移植自 zhaotab 的 35 套 `zt-*`）
 - **18 维度混搭**：字体、颜色、间距、边框等维度自由组合
 - **手机预览模式**：实时模拟手机端阅读效果
 - **XHS 小红书分页**：支持小红书风格的内容分页展示
@@ -19,9 +19,9 @@
 ```
 .
 ├── frontend/                 # 编辑器前端（index.html / build.py / 三个 JSON）
-├── backend/                  # Flask 服务 + Markdown 解析器 + 19 个主题 CSS
+├── backend/                  # Flask 服务 + Markdown 解析器 + 59 个主题 CSS
 ├── wenyan-data/              # 运行时数据卷（自定义主题等）
-├── scripts/                  # 规范自检 / 提交推送 / 截图脚本
+├── scripts/                  # 规范自检 / 主题批量导出与一致性验收 / 提交推送 / 截图
 ├── docs/                     # 开发文档与合规报告
 ├── Dockerfile                # 薄容器（不打 Playwright，前端/后端靠挂载）
 ├── docker-compose.yml        # 容器编排

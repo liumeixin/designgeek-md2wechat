@@ -13,8 +13,11 @@
 
 - 容器相关文件只有 `Dockerfile` + `docker-compose.yml` + `.dockerignore`，改动面极小。
 - ⚠️ 改主题配色前先看
-  `docs/微信编辑器规范合规-2026-10-12.md` §七.5：19 个主题里 **15 个以 `frontend/themes.json`
-  为真源、4 个以 `backend/static/css/themes/*.css` 为真源**，改错地方会被 `build.py` 冲掉。
+  `docs/微信编辑器规范合规-2026-10-12.md` §七.5：59 个主题里 **15 套以 `frontend/themes.json`
+  为真源、44 套以 `backend/static/css/themes/*.css` 为真源**（4 套在 `CSS_AUTHORITATIVE` 白名单：
+  dark-green / notebook-blue / notebook-purple / ugreen；5 套 `wedraft-*` 与 35 套 `zt-*` 靠前缀进
+  `CSS_PREFIX_AUTHORITATIVE`），改错地方会被 `build.py` 冲掉。
+  判断方法：`build.py` 里「新 CSS 比旧条目短就保留旧条目」的启发式只在**非权威**主题上生效。
 
 ## 提交约定（2026-10-12）
 
@@ -52,7 +55,7 @@ designgeek-md2wechat/                     # 单仓库（桌面端 + 容器共用
 ├── backend/
 │   ├── app.py                            # Flask 应用（桌面端/容器共用，端口由 PORT 覆盖）
 │   ├── markdown_parser.py                # MD → 语义化 HTML / 内联样式 HTML
-│   └── static/css/themes/                # 19 个主题 CSS 文件
+│   └── static/css/themes/                # 59 个主题 CSS 文件
 ├── frontend/
 │   ├── index.html                        # 前端 UI（唯一入口）
 │   ├── build.py                          # CSS → 三个 JSON
@@ -81,10 +84,16 @@ designgeek-md2wechat/                     # 单仓库（桌面端 + 容器共用
 ### 18 个维度（dimensions.json）
 background, text-color, h1, h2, h3h6, bold, italic, blockquote, inline-code, code-block, ul, ol, links, table, image, hr, footnote, spacing
 
-### 19 个内置主题
-claude, cli, color-pop, cyber, dark-green, default, fireworks, girl-pink, grass, lavender-purple, macarons, newyear, notebook-blue, notebook-purple, parrotalk, purple-yellow-pop, sunrise, ugreen, winter
+### 59 个内置主题
+
+原有 24 套：
+claude, cli, color-pop, cyber, dark-green, default, fireworks, girl-pink, grass, lavender-purple, macarons, newyear, notebook-blue, notebook-purple, parrotalk, purple-yellow-pop, sunrise, ugreen, winter, wedraft-blueprint, wedraft-cinnabar, wedraft-ink-journal, wedraft-jade-notes, wedraft-plain-paper
+
+移植自 zhaotab（2026-11-12，35 套，统一 `zt-` 前缀）：
+simple, orange, seal, blue, blush, briefing, bubble, candy, checklist, coffee, docs, feed, festival, forest, gold, green, grid, ink, inkwash, kraft, lemon, magazine, mint, neon, news, nordic, notebook, ocean, pop, rose, sakura, terminal, timeline, violet, whisper
 
 > `grass-nobg`（零样式坏主题）已于 2026-10-12 删除。
+> `zt-*` 的装饰是 CSS 近似（原实现靠 JS 往 HTML 里插 `<span>`），每套文件头都注明了未移植项。
 
 ### API
 - POST `/convert` — MD → 语义化 HTML（预览）
@@ -263,7 +272,7 @@ document.body.removeChild(tmp);
   `NOOP_RULES` 丢弃；`text-indent` 在行内元素上跳过（它只对块级容器生效，继承下来是噪音）。
 - **`width` 一律不用 computed 值**：`getComputedStyle().width` 返回的是**已解析的 px 使用值**，
   内联进公众号就是固定宽度（§1.4 禁止）。所以：
-  - `<table>` 直接写 `width:100%`（19 个主题全都这么声明）
+  - `<table>` 直接写 `width:100%`（59 个主题全都这么声明）
   - `<img>` 写 `max-width: calc(100% - 左右外边距)`，把主题的 `width:calc(100% - 16px)` 意图保下来
 - **`border-<方向>`**：只有与 `border` 简写**不同**时才输出（表格单元格因此省掉 4/5 的边框声明）。
 - **代码块长行**：按用户 2026-10-12 拍板采用**横向滚动**（`overflow-x:auto`，不换行），

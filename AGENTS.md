@@ -42,7 +42,7 @@
 
 - `frontend/`：纯前端，唯一外部依赖 marked.js CDN
 - `backend/`：Flask API 服务，提供 Markdown 解析、主题 CSS 文件服务
-- `scripts/`：本地脚本（html2png.mjs 截图、规范自检、提交推送）
+- `scripts/`：本地脚本（html2png.mjs 截图、规范自检、提交推送、主题批量验收）
 
 ### 两种使用模式（2026-10-12 合并为单仓库）
 
@@ -90,13 +90,16 @@
 | 文件 | 用途 |
 |------|------|
 | `frontend/index.html` | 编辑器主页面（Flask 模板）——**唯一**前端交付物 |
-| `frontend/themes.json` | 19 个主题的完整 CSS（15 个主题的**真源**，见下） |
+| `frontend/themes.json` | 59 个主题的完整 CSS（15 个主题的**真源**，见下） |
 | `frontend/dimensions.json` | 18 个维度的混搭 CSS 片段 |
 | `frontend/build.py` | 从 CSS 源文件构建 JSON（输出 `indent=2`，幂等） |
 | `backend/app.py` | Flask 服务（API + 前端托管），桌面端/容器共用 |
 | `backend/markdown_parser.py` | 正则 Markdown 解析器 |
-| `backend/static/css/themes/` | 19 个主题 CSS 文件（其中 4 个是**真源**，见下） |
+| `backend/static/css/themes/` | 59 个主题 CSS 文件（其中 44 个是**真源**，见下） |
 | `scripts/html2png.mjs` | Playwright 截图脚本（桌面端） |
+| `scripts/export_all.mjs` | 一次启动批量导出全部/指定前缀主题的真实复制产物（改主题后必跑） |
+| `scripts/compare_preview_export.mjs` | 校验「导出 == 预览」：逐元素比对计算样式，实质差异非 0 时退出码 1 |
+| `scripts/_pw.mjs` | 上面两个脚本共用的 Playwright 启动/Chromium 探测 helper |
 | `scripts/check_wechat_spec.py` | 产出 HTML 的微信规范静态自检（§1.3–§1.6/§3/§4.1.1/§4.5.2） |
 | `scripts/commit_and_push.py` | 提交并推送到 Gitea（多通道回退，token 不落盘） |
 | `Dockerfile` | 薄容器定义 |
@@ -113,7 +116,8 @@
 > **15 个主题**（claude/cli/color-pop/cyber/default/fireworks/girl-pink/grass/lavender-purple/
 > macarons/newyear/parrotalk/purple-yellow-pop/sunrise/winter）的 CSS 是 `--wy-*` 占位文件，
 > **themes.json 才是真源**；
-> **4 个主题**（dark-green/notebook-blue/notebook-purple/ugreen）的 CSS 是真文件，
+> **4 个主题**（dark-green/notebook-blue/notebook-purple/ugreen）、
+> **5 套 `wedraft-*`**、**35 套 `zt-*`**（共 44 套）的 CSS 是真文件，
 > **CSS 才是真源**，`build.py` 会用 CSS 覆盖 themes.json。
 > 改配色前先确认，否则会被 `build.py` 冲掉。
 > 详见 `docs/微信编辑器规范合规-2026-10-12.md` §七.5。

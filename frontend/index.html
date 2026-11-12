@@ -1602,6 +1602,61 @@ function toolbarAction(action) {
   renderMarkdown();
 }
 
+// ========== CSS 声明解析（容器级属性下沉用） ==========
+// 🔴 为什么不能用正则：主题里的 background-image 常是
+//      url("data:image/svg+xml;utf8,<svg …>") no-repeat …
+//    值里既有 `;` 又有 `"` 和括号。用 `[^;}]+` 会在 `svg+xml;` 的**分号处截断**，
+//    于是在 style 属性里留下一个未闭合的 url("data:… ，CSS 解析器随后把整条
+//    声明块（含 font-size / line-height）一起吞掉。
+//    实测中招：color-pop、fireworks —— 导出后正文行高退化成 normal。
+//    所以这里用「引号 + 括号感知」的扫描器，而不是正则。
+function readRuleBody(css, selector) {
+  let from = 0;
+  for (;;) {
+    const i = css.indexOf(selector, from);
+    if (i < 0) return '';
+    let j = i + selector.length;
+    while (j < css.length && /\s/.test(css[j])) j++;
+    if (css[j] === '{') {
+      let depth = 0, quote = null;
+      for (let k = j; k < css.length; k++) {
+        const c = css[k];
+        if (quote) {
+          if (c === '\\') { k++; continue; }
+          if (c === quote) quote = null;
+          continue;
+        }
+        if (c === '"' || c === "'") { quote = c; continue; }
+        if (c === '{') depth++;
+        else if (c === '}') { depth--; if (!depth) return css.slice(j + 1, k); }
+      }
+      return css.slice(j + 1);
+    }
+    from = i + selector.length;
+  }
+}
+
+function readDecl(body, prop) {
+  const re = new RegExp('(?:^|[;{\\s])' + prop + '\\s*:', 'i');
+  const m = re.exec(body);
+  if (!m) return null;
+  const start = m.index + m[0].length;
+  let quote = null, paren = 0;
+  for (let k = start; k < body.length; k++) {
+    const c = body[k];
+    if (quote) {
+      if (c === '\\') { k++; continue; }
+      if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'") { quote = c; continue; }
+    if (c === '(') paren++;
+    else if (c === ')') { if (paren) paren--; }
+    else if ((c === ';' || c === '}') && !paren) return body.slice(start, k).trim();
+  }
+  return body.slice(start).trim();
+}
+
 // ========== COPY HTML (v2: inline all styles + pseudo-elements) ==========
 function copyHtml() {
   const wenyan = document.getElementById('wenyan');
@@ -1650,6 +1705,36 @@ function copyHtml() {
     [/^border-spacing$/, /^0(px)?(\s+0(px)?)*$/],
   ];
   const baseFont = getComputedStyle(wenyan).fontFamily;
+
+  // 🔴 line-height 必须写成**无单位比例**，不能写 computed 出来的 px。
+  //    原因：line-height 是可继承属性，px 是绝对值 —— 父级写了 27px，内层
+  //    <code>/<a>/<sup> 这些字号更小的行内元素就全都变成 27px，而预览里它们是
+  //    「1.8 × 自己的字号」（如 13.5px → 24.3px）。实测：给 <p> 内联 px 行高后，
+  //    59 套主题的 `code` 行高全部对不上。
+  //    主题里 581 处 line-height 声明只有 1 处用 px（color-pop 的圆形徽章），
+  //    换算成比例后渲染完全一致，所以统一转比例是安全的。
+  function lhValue(computed) {
+    const raw = String(computed.getPropertyValue('line-height') || '').trim();
+    const fs = parseFloat(computed.getPropertyValue('font-size'));
+    const lh = parseFloat(raw);
+    if (raw === 'normal' || !isFinite(lh) || !isFinite(fs) || fs <= 0) return raw;
+    return String(Math.round((lh / fs) * 1000) / 1000);
+  }
+
+  // 🔴 NOOP_RULES 把「等于初始值」的声明当噪音丢掉，但这条规则对**可继承属性**
+  //    不成立：父级已经内联了非初始值，子级显式写回初始值反而是有意义的。
+  //    实例（2026-11-12 实测）：`pre` 内联了 letter-spacing:0.5px，主题又给
+  //    `pre code { letter-spacing: normal }`，丢掉 normal ⇒ 内层 code 继承 0.5px，
+  //    与预览不一致。所以这两个属性被丢弃时要跟父级的计算值比一下，不同才补回。
+  const INHERIT_NOOP = new Set(['letter-spacing', 'text-indent']);
+  function inheritNoopDecl(prop, computed, liveEl) {
+    if (!INHERIT_NOOP.has(prop)) return '';
+    const raw = String(computed.getPropertyValue(prop) || '').trim();
+    if (!raw) return '';
+    const pe = liveEl.parentElement;
+    const pv = pe ? getComputedStyle(pe).getPropertyValue(prop).trim() : '';
+    return raw !== pv ? prop + ':' + raw + ';' : '';
+  }
 
   // §1.4/§1.5：元素自带的 style（用户 Markdown 里的原始 HTML）原先会**原样保留**，
   // 从而绕过下面的 copyProps 白名单 —— 固定宽高照样漏进导出结果，被公众号编辑器
@@ -1734,16 +1819,20 @@ function copyHtml() {
   const BORDER_DIRS = ['border-left', 'border-top', 'border-right', 'border-bottom'];
 
   // padding 已全局放行，这里只保留 line-height 的定向规则
-  // 2026-11-12：由 {blockquote, pre} 扩到「标题 + 表格单元格」。
+  // 2026-11-12：由 {blockquote, pre} 扩到「标题 + 表格单元格 + 列表 + 段落」。
   // 原先标题与 th/td 不内联 line-height，只能继承外层 <section> 的值，而主题给
   // `#wenyan h1 { line-height: 1.5 }` / `#wenyan th { line-height: 1.6 }` 的声明
   // 在导出后完全没有载体 —— 预览与粘贴结果的行高对不上（标题尤其明显）。
-  // line-height 不属于 §1.4 的「固定尺寸」范畴，内联 px 是安全的；§1.3 只要求
-  // line-height 不小于字号，主题自身均满足。
+  // <p> 同理：主题常给参考来源等区块更具体的行高（如根 1.88、区块 1.8），
+  // 不内联就只能继承根值。代价约 20 字节/段，可接受。
+  // 值一律经 lhValue() 转成**无单位比例**（不是 px），这样行内子元素仍按自身字号缩放；
+  // line-height 不属于 §1.4 的「固定尺寸」范畴，§1.3 只要求不小于字号，主题均满足。
   const LH_TAGS = new Set(['blockquote', 'pre',
                            'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'th', 'td',
                            // li：个别主题（如 ugreen）给 li 单独设了行高，与根容器不同
-                           'li']);
+                           'li',
+                           // p：正文主体，主题对特定区块（参考来源等）有更具体的行高
+                           'p']);
   // list-style-type 只对列表元素有意义，其余元素上纯属噪音（实测 40 处/篇）
   const LIST_TAGS = new Set(['ul', 'ol', 'li']);
   // border-collapse 是可继承属性，只该写在 <table> 上
@@ -1786,7 +1875,9 @@ function copyHtml() {
         if (prop === 'text-indent' && INLINE_TAGS.has(tag)) continue;
         if (prop === 'margin' && headingAutoMargin) continue;
         const val = cleanValue(prop, computed.getPropertyValue(prop));
-        if (val) s += prop + ':' + val + ';';
+        if (val) { s += prop + ':' + val + ';'; continue; }
+        // 被 NOOP 丢掉的可继承属性：与父级不同就补回（见 INHERIT_NOOP 注释）
+        s += inheritNoopDecl(prop, computed, liveEl);
       }
       // border 简写与四个方向长写完全重复时只留简写
       const borderVal = cleanValue('border', computed.getPropertyValue('border'));
@@ -1846,24 +1937,24 @@ function copyHtml() {
         }
       }
       if (LH_TAGS.has(tag)) {
-        const v = cleanValue('line-height', computed.getPropertyValue('line-height'));
-        if (v) s += 'line-height:' + v + ';';
+        const v = lhValue(computed);
+        if (v && v !== 'normal') s += 'line-height:' + v + ';';
       }
       // 引用块里的 <p>：<blockquote> 已内联自己的行高，若不在这里补上，<p> 会继承
       // 引用块的值而不是主题给正文的 `#wenyan p { line-height }` —— 预览与导出差一截。
-      // 只对「父级是 blockquote」的 <p> 定向补，不给全文每个段落都塞 px 行高。
+      // 只对「父级是 blockquote」的 <p> 定向补，不给全文每个段落都塞行高。
       if (tag === 'p' && liveEl.parentElement &&
           (liveEl.parentElement.tagName || '').toLowerCase() === 'blockquote') {
-        const pv = cleanValue('line-height', computed.getPropertyValue('line-height'));
-        if (pv) s += 'line-height:' + pv + ';';
+        const pv = lhValue(computed);
+        if (pv && pv !== 'normal') s += 'line-height:' + pv + ';';
       }
       if (isCodeBlock(liveEl)) {
         if (tag === 'code') s += 'display:block;';   // 主题：pre code { display:block }
         s += 'overflow-x:auto;';                     // 长行横向滚动，不换行
         // 代码块内层 <code> 也常被主题单独设行高（如 1.6），否则只会继承 <pre> 的值
         if (tag === 'code') {
-          const clh = cleanValue('line-height', computed.getPropertyValue('line-height'));
-          if (clh) s += 'line-height:' + clh + ';';
+          const clh = lhValue(computed);
+          if (clh && clh !== 'normal') s += 'line-height:' + clh + ';';
         }
       }
       cloneEl.setAttribute('style', s);
@@ -1885,9 +1976,8 @@ function copyHtml() {
   //    会**盖掉主题自己在 #wenyan 上声明的字号**（zt-* 是 15px、wedraft-* 是 16px、
   //    ugreen 行高 2），导致导出比预览大一号。改为「主题声明优先，未声明才兜底」。
   let bgInline = '';
-  const wenyanMatch = themeCss.match(/#wenyan\s*\{([^}]*)\}/);
-  if (wenyanMatch) {
-    const block = wenyanMatch[1];
+  const wenyanBody = readRuleBody(themeCss, '#wenyan');
+  if (wenyanBody) {
     const containerProps = ['background', 'background-color', 'background-image', 'background-size',
                             'background-repeat', 'background-position', 'background-attachment',
                             'color', 'padding',
@@ -1896,11 +1986,13 @@ function copyHtml() {
                             'font-size', 'line-height', 'letter-spacing', 'text-align', 'word-break'];
     const decls = {};
     for (const prop of containerProps) {
-      const re = new RegExp('(?:^|[;{\\s])' + prop + '\\s*:\\s*([^;}]+)');
-      const m = block.match(re);
-      // 值里可能含 url("data:image/svg+xml,…")，其中的 " 会**提前闭合 style 属性**，
-      // 导致该属性后半段（含 color / padding）被浏览器丢弃 → 必须转义为 &quot;
-      if (m) decls[prop] = m[1].trim().replace(/"/g, '&quot;');
+      const raw = readDecl(wenyanBody, prop);
+      // 去掉 CSS 注释、压掉换行：data URI 常带 /* 说明 */ 与多行排版，内联进属性只会变胖
+      // 值里的 " 必须转义 —— 否则会**提前闭合 style 属性**
+      if (raw) {
+        decls[prop] = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ').trim()
+                          .replace(/"/g, '&quot;');
+      }
     }
     // 主题没声明字号 / 行高时才补平台默认值（17px / 1.75），避免同一属性出现两遍
     for (const [k, v] of Object.entries({ 'font-size': '17px', 'line-height': '1.75' })) {
@@ -1997,10 +2089,13 @@ function injectPseudoElements(clone, themeCss) {
           for (let j = 0; j < rule.style.length; j++) {
             const prop = rule.style[j];
             if (prop === 'content') continue;
-            if (/^(position|top|left|right|bottom|inset|z-index|transform|float|clear|font-family|width|height|min-width|max-width|min-height|max-height)$/i.test(prop)) continue;
+            // counter-increment / counter-reset 内联出去也没有任何作用（微信不支持
+            // CSS 计数器，序号已经退化成文字），只会增加噪音。
+            if (/^(position|top|left|right|bottom|inset|z-index|transform|float|clear|font-family|width|height|min-width|max-width|min-height|max-height|counter-increment|counter-reset)$/i.test(prop)) continue;
             styleText += prop + ':' + rule.style.getPropertyValue(prop) + ';';
           }
-          span.style.cssText = styleText;
+          // 没有可复制声明时不要留空的 style=""（导出里是纯噪音）
+          if (styleText) span.style.cssText = styleText;
 
           // Handle content: url(...) → <img>
           // 注意：data:image/svg+xml 的 URI 内部常含 ")"（如 translate(-50%)、rgba(...)），
@@ -2022,7 +2117,21 @@ function injectPseudoElements(clone, themeCss) {
             return;
           } else {
             // content: "text" → text node
-            const txt = contentVal.replace(/^["']|["']$/g, '');
+            // 🔴 CSSOM 不会解析 counter() / attr()，会把表达式**原样**吐出来。
+            //    直接当文字用就会在正文里印出字面量 "counter(pop-counter)"
+            //    （2026-11-12 实测：cli / color-pop / fireworks / girl-pink / grass /
+            //      lavender-purple / macarons / newyear / sunrise / winter 共 10 套中招）。
+            //    微信里 CSS 计数器本来也不生效，所以退化成「父容器内的序号」。
+            let txt = contentVal.replace(/^["']|["']$/g, '');
+            if (/counter\(|attr\(/.test(txt)) {
+              const parent = el.parentElement;
+              const idx = parent ? [...parent.children].indexOf(el) + 1 : 1;
+              txt = txt
+                .replace(/counter\(\s*[\w-]+\s*(?:,[^)]*)?\)/g, () => String(idx))
+                .replace(/attr\(\s*([\w-]+)\s*\)/g, (_, a) => el.getAttribute(a) || '');
+              // 仍有解析不掉的表达式 → 宁可留空，也绝不把表达式当文字输出
+              if (/counter\(|attr\(/.test(txt)) txt = '';
+            }
             span.textContent = txt;
           }
 
