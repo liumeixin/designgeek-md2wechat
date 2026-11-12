@@ -1,0 +1,214 @@
+/* 波普 · 移植自 zhaotab（找Tab）公众号排版  id=pop
+ * 源：https://www.zhaotab.com/typeset  assets/Typeset-*.js
+ * 生成工具：D:/aiwork/scripts/_out/zhaotab2theme.py
+ * 说明：装饰为 CSS 近似（原实现靠 <span> 包裹），非像素级复刻。
+ * 未移植：分割线字符装饰、无序列表符号、有序列表编号
+ */
+
+#wenyan {
+  font-size: 15px;
+  line-height: 1.8;
+  color: #3f3f3f;
+  letter-spacing: 0.5px;
+  word-break: break-word;
+  text-align: justify;
+}
+
+#wenyan p {
+  margin: 1em 0;
+  font-size: 15px;
+  line-height: 1.8;
+  color: #3f3f3f;
+  letter-spacing: 0.5px;
+  word-break: break-word;
+  text-align: justify;
+}
+
+#wenyan h1 {
+  margin: 1em 0 1.2em;
+  font-size: 23px;
+  font-weight: 900;
+  line-height: 1.4;
+  color: #111;
+  text-align: center;
+}
+
+#wenyan h2 {
+  margin: 2em auto 1.2em;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.5;
+  color: #111;
+  display: table;
+  padding: 6px 16px;
+  border: 2px solid #111;
+  background: #ffd23f;
+  box-shadow: 4px 4px 0 #111;
+}
+
+#wenyan h3 {
+  margin: 1.6em 0 0.8em;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1.5;
+  color: #111;
+  padding: 0 6px;
+  border: 2px solid #111;
+  background: #a8e6cf;
+}
+
+#wenyan h4 {
+  margin: 1.2em 0 0.6em;
+  font-size: 15px;
+  font-weight: bold;
+  line-height: 1.5;
+  color: #ff5a36;
+}
+
+#wenyan strong {
+  font-weight: bold;
+  color: #111;
+  background: #ffd23f;
+  padding: 0 3px;
+}
+
+#wenyan em {
+  font-style: italic;
+}
+
+#wenyan del {
+  text-decoration: line-through;
+  color: #999;
+}
+
+#wenyan sup {
+  font-size: 75%;
+  line-height: 0;
+  vertical-align: super;
+}
+
+#wenyan sub {
+  font-size: 75%;
+  line-height: 0;
+  vertical-align: sub;
+}
+
+#wenyan a {
+  color: #111;
+  text-decoration: none;
+  border-bottom: 2px solid #ff5a36;
+}
+
+#wenyan blockquote {
+  margin: 1.6em 0;
+  padding: 12px 16px;
+  border: 2px solid #111;
+  background: #fff;
+  box-shadow: 4px 4px 0 #111;
+  color: #333;
+  font-size: 14px;
+}
+
+#wenyan blockquote p {
+  margin: 0.4em 0;
+}
+
+#wenyan ul {
+  margin: 1em 0;
+  padding-left: 1.6em;
+  list-style-type: disc;
+}
+
+#wenyan ol {
+  margin: 1em 0;
+  padding-left: 1.6em;
+  list-style-type: decimal;
+}
+
+#wenyan li {
+  margin: 0.4em 0;
+  font-size: 15px;
+  line-height: 1.8;
+  color: #3f3f3f;
+  letter-spacing: 0.5px;
+  word-break: break-word;
+  text-align: justify;
+}
+
+#wenyan code {
+  margin: 0 2px;
+  padding: 1px 5px;
+  border: 1.5px solid #111;
+  border-radius: 4px;
+  background: #ffe3ec;
+  color: #111;
+  font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+  font-size: 88%;
+}
+
+#wenyan pre {
+  margin: 1.6em 0;
+  border: 2px solid #111;
+  border-radius: 6px;
+  background: #282c34;
+  overflow-x: auto;
+  box-shadow: 4px 4px 0 #111;
+}
+
+#wenyan pre code {
+  display: block;
+  padding: 10px 14px 14px;
+  color: #abb2bf;
+  font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  letter-spacing: 0;
+  white-space: nowrap;
+  background: none;
+}
+
+#wenyan hr {
+  margin: 2em 0;
+  height: 0;
+  border: 0;
+  border-top: 1px solid #e5e5e5;
+}
+
+#wenyan .table-wrap {
+  margin: 1.4em 0;
+  overflow-x: auto;
+}
+
+#wenyan table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+#wenyan table th {
+  padding: 8px 10px;
+  border: 2px solid #111;
+  background: #111;
+  color: #ffd23f;
+  font-weight: bold;
+  text-align: left;
+}
+
+#wenyan table td {
+  padding: 8px 10px;
+  border: 2px solid #111;
+  background: #fff;
+}
+
+#wenyan .img-slot {
+  display: block;
+  margin: 1.4em 0;
+  padding: 22px 12px;
+  border: 2px dashed #111;
+  background: #fff;
+  color: #666;
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+}

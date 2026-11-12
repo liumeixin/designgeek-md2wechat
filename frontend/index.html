@@ -215,6 +215,24 @@ html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Sego
   font-size: 16px;
 }
 
+/* 图片占位框（2026-11-12，借鉴 zhaotab 找Tab 的思路）——
+   公众号正文不保留外链图片，粘贴过去要么裂图要么被丢掉。
+   所以非微信图床的图片在这里换成占位框，提示「到公众号里手动插图」。
+   主题可以覆盖 .img-slot 的配色（35 套 zt-* 主题各自带一份）。 */
+#wenyan .img-slot {
+  display: block;
+  margin: 1.4em 0;
+  padding: 22px 12px;
+  border: 1px dashed #c8c8c8;
+  border-radius: 6px;
+  background: #fafafa;
+  color: #999;
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+  word-break: break-word;
+}
+
 /* 图片方向样式：实时检测后应用 */
 #wenyan img.landscape {
   width: 100% !important;
@@ -281,6 +299,11 @@ html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Sego
     <select id="themeSelect" class="theme-select" title="整体主题切换">
       <option value="">选择主题...</option>
     </select>
+
+    <button id="imgSlotBtn" class="btn" title="把非微信图床的图片换成占位框（公众号不保留外链图，粘贴后需手动插图）">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.58-1.96-2.36L6.5 17h11l-3.54-4.71z"/></svg>
+      图片占位符
+    </button>
 
     <button id="togglePanel" class="btn" title="元素风格混搭面板">
       <svg viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
@@ -356,6 +379,7 @@ const state = {
   currentTheme: 'default',
   dimensions: {},  // { dimKey: themeName } — only set when overridden
   mode: 'whole',   // 'whole' or 'mix'
+  imgSlot: false,  // 图片占位符：把非微信图床的图换成占位框
 };
 
 // ========== DATA (injected by build) ==========
@@ -567,6 +591,11 @@ const NOTE_PREFIX = /^(注|说明|参考|来源|资料来源|数据来源|作者
 const REF_TITLE_RE = /^(参考来源|参考资料|参考文献|references?)$/i;
 const H2_NUM_RE = /^\s*(\d+)\s*[.．、]\s*/;
 
+// 图片占位符开关（2026-11-12，借鉴 zhaotab）。默认关：不影响现有输出。
+let imgSlotOn = false;
+// 微信自家图床的图能直接粘贴过去，不该换成占位框。
+const WX_IMG_HOST = /^https?:\/\/(?:mmbiz\.qpic\.cn|mmbiz\.qlogo\.cn)\//i;
+
 function enhanceWechatHtml(html) {
   const doc = new DOMParser().parseFromString(
     '<div id="__wb_root">' + html + '</div>', 'text/html');
@@ -660,6 +689,23 @@ function enhanceWechatHtml(html) {
     h.parentNode.replaceChild(sec, h);
     list.remove();
   });
+
+  // ⑥ 图片占位符：公众号正文不保留外链图，把非微信图床的 <img> 换成占位框。
+  //    放在最后做，前面的图注识别仍然能按 <img> 找到位置。
+  //    用 DOMParser 建节点而不是拼字符串 —— alt 里的 < & 会被正确转义。
+  if (imgSlotOn) {
+    root.querySelectorAll('img').forEach(img => {
+      const src = img.getAttribute('src') || '';
+      if (WX_IMG_HOST.test(src)) return;
+      const alt = (img.getAttribute('alt') || '').trim();
+      const span = doc.createElement('span');
+      span.className = 'img-slot';
+      span.appendChild(doc.createTextNode(alt ? '📷 在这里插入图片：' + alt : '📷 在这里插入图片'));
+      span.appendChild(doc.createElement('br'));
+      span.appendChild(doc.createTextNode('粘贴到公众号后，用编辑器的「图片」按钮插入，再删掉这个框'));
+      img.parentNode.replaceChild(span, img);
+    });
+  }
 
   return root.innerHTML;
 }
@@ -1688,7 +1734,16 @@ function copyHtml() {
   const BORDER_DIRS = ['border-left', 'border-top', 'border-right', 'border-bottom'];
 
   // padding 已全局放行，这里只保留 line-height 的定向规则
-  const LH_TAGS = new Set(['blockquote', 'pre']);
+  // 2026-11-12：由 {blockquote, pre} 扩到「标题 + 表格单元格」。
+  // 原先标题与 th/td 不内联 line-height，只能继承外层 <section> 的值，而主题给
+  // `#wenyan h1 { line-height: 1.5 }` / `#wenyan th { line-height: 1.6 }` 的声明
+  // 在导出后完全没有载体 —— 预览与粘贴结果的行高对不上（标题尤其明显）。
+  // line-height 不属于 §1.4 的「固定尺寸」范畴，内联 px 是安全的；§1.3 只要求
+  // line-height 不小于字号，主题自身均满足。
+  const LH_TAGS = new Set(['blockquote', 'pre',
+                           'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'th', 'td',
+                           // li：个别主题（如 ugreen）给 li 单独设了行高，与根容器不同
+                           'li']);
   // list-style-type 只对列表元素有意义，其余元素上纯属噪音（实测 40 处/篇）
   const LIST_TAGS = new Set(['ul', 'ol', 'li']);
   // border-collapse 是可继承属性，只该写在 <table> 上
@@ -1720,11 +1775,16 @@ function copyHtml() {
     try {
       const computed = getComputedStyle(liveEl);
       const tag = (cloneEl.tagName || '').toLowerCase();
+      // 药丸型标题的水平 margin 必须写 auto（见下方 display 分支），
+      // 这里先把计算值跳过，避免同一属性出现两条声明。
+      const headingAutoMargin = /^h[1-6]$/.test(tag) &&
+        (computed.display === 'table' || computed.display === 'inline-block');
       let s = sanitizeKeptStyle(cloneEl.getAttribute('style') || '', tag);
       if (s && !s.endsWith(';')) s += ';';
       for (const prop of copyProps) {
         // text-indent 是可继承属性，行内元素继承到负值只是噪音（它只对块级容器生效）
         if (prop === 'text-indent' && INLINE_TAGS.has(tag)) continue;
+        if (prop === 'margin' && headingAutoMargin) continue;
         const val = cleanValue(prop, computed.getPropertyValue(prop));
         if (val) s += prop + ':' + val + ';';
       }
@@ -1764,13 +1824,47 @@ function copyHtml() {
       if (cloneEl.classList && cloneEl.classList.contains('table-wrap')) {
         s += 'overflow:hidden;';   // 圆角裁切；不支持时浏览器直接忽略，无副作用
       }
+      // display 只在两类元素上内联（2026-11-12）：
+      //   ① 标题：药丸型 h2 靠 display:table + margin auto 收缩并居中（zt-* 主题）
+      //   ② 图片占位框：span 要 display:block 才吃得到上下 margin
+      // 其余元素仍然**不**内联 display —— 全局内联会让正文文字重叠。
+      if (/^h[1-6]$/.test(tag) ||
+          (cloneEl.classList && cloneEl.classList.contains('img-slot'))) {
+        const d = computed.display;
+        const isSlot = cloneEl.classList && cloneEl.classList.contains('img-slot');
+        // 占位框是 <span>，浏览器默认 inline，必须显式写回 block 才吃得到上下 margin；
+        // 标题默认就是 block，只在主题把它改成 table/inline-block 时才需要输出。
+        if (d && (isSlot || (d !== 'block' && d !== 'inline'))) s += 'display:' + d + ';';
+        // 🔴 display:table / inline-block 的「收缩并居中」靠的是 margin auto，
+        // 但 getComputedStyle 返回的是**已解析的 px 使用值**（如 27.75px）。
+        // 直接内联 = 固定水平外边距 ⇒ 换屏宽就偏，正是 §1.4 那类「居中不一致」。
+        // 所以水平分量强制写回 auto，纵向沿用解析值。
+        if (!isSlot && (d === 'table' || d === 'inline-block')) {
+          const mt = parseFloat(computed.marginTop) || 0;
+          const mb = parseFloat(computed.marginBottom) || 0;
+          s += 'margin:' + mt + 'px auto ' + mb + 'px;';
+        }
+      }
       if (LH_TAGS.has(tag)) {
         const v = cleanValue('line-height', computed.getPropertyValue('line-height'));
         if (v) s += 'line-height:' + v + ';';
       }
+      // 引用块里的 <p>：<blockquote> 已内联自己的行高，若不在这里补上，<p> 会继承
+      // 引用块的值而不是主题给正文的 `#wenyan p { line-height }` —— 预览与导出差一截。
+      // 只对「父级是 blockquote」的 <p> 定向补，不给全文每个段落都塞 px 行高。
+      if (tag === 'p' && liveEl.parentElement &&
+          (liveEl.parentElement.tagName || '').toLowerCase() === 'blockquote') {
+        const pv = cleanValue('line-height', computed.getPropertyValue('line-height'));
+        if (pv) s += 'line-height:' + pv + ';';
+      }
       if (isCodeBlock(liveEl)) {
         if (tag === 'code') s += 'display:block;';   // 主题：pre code { display:block }
         s += 'overflow-x:auto;';                     // 长行横向滚动，不换行
+        // 代码块内层 <code> 也常被主题单独设行高（如 1.6），否则只会继承 <pre> 的值
+        if (tag === 'code') {
+          const clh = cleanValue('line-height', computed.getPropertyValue('line-height'));
+          if (clh) s += 'line-height:' + clh + ';';
+        }
       }
       cloneEl.setAttribute('style', s);
     } catch(e) {}
@@ -1785,27 +1879,41 @@ function copyHtml() {
     if (origUrl) img.setAttribute('src', origUrl);
   });
 
-  // 5. Extract #wenyan 背景 / 前景色 / padding 到外层 <section>
+  // 5. Extract #wenyan 的容器级声明到外层 <section>
   //    §4.1.1：容器同时声明背景色与文字色，保证 Dark Mode 下对比度关系明确。
+  //    2026-11-12：字号 / 行高 / 字距 / 对齐也一并下沉。此前外层硬编码 17px / 1.75，
+  //    会**盖掉主题自己在 #wenyan 上声明的字号**（zt-* 是 15px、wedraft-* 是 16px、
+  //    ugreen 行高 2），导致导出比预览大一号。改为「主题声明优先，未声明才兜底」。
   let bgInline = '';
   const wenyanMatch = themeCss.match(/#wenyan\s*\{([^}]*)\}/);
   if (wenyanMatch) {
     const block = wenyanMatch[1];
-    const bgProps = ['background', 'background-color', 'background-image', 'background-size',
-                     'background-repeat', 'background-position', 'background-attachment',
-                     'color', 'padding'];
-    for (const prop of bgProps) {
+    const containerProps = ['background', 'background-color', 'background-image', 'background-size',
+                            'background-repeat', 'background-position', 'background-attachment',
+                            'color', 'padding',
+                            // 继承型排版属性：必须落在容器上，h1~h6 / blockquote / table
+                            // 这些没有自带字号的元素才会跟着走主题，而不是跟着 17px 兜底
+                            'font-size', 'line-height', 'letter-spacing', 'text-align', 'word-break'];
+    const decls = {};
+    for (const prop of containerProps) {
       const re = new RegExp('(?:^|[;{\\s])' + prop + '\\s*:\\s*([^;}]+)');
       const m = block.match(re);
       // 值里可能含 url("data:image/svg+xml,…")，其中的 " 会**提前闭合 style 属性**，
       // 导致该属性后半段（含 color / padding）被浏览器丢弃 → 必须转义为 &quot;
-      if (m) bgInline += prop + ':' + m[1].trim().replace(/"/g, '&quot;') + ';';
+      if (m) decls[prop] = m[1].trim().replace(/"/g, '&quot;');
     }
+    // 主题没声明字号 / 行高时才补平台默认值（17px / 1.75），避免同一属性出现两遍
+    for (const [k, v] of Object.entries({ 'font-size': '17px', 'line-height': '1.75' })) {
+      if (!decls[k]) decls[k] = v;
+    }
+    for (const [k, v] of Object.entries(decls)) bgInline += k + ':' + v + ';';
+  } else {
+    bgInline = 'line-height:1.75;font-size:17px;';
   }
 
   // §3：不设置 font-family，交给平台默认字体栈
   // 出口清洗：标签 / 属性 / 协议三层白名单（见 sanitizeWechatHtml）
-  const fullHtml = sanitizeWechatHtml(`<section style="line-height: 1.75; font-size: 17px;${bgInline}">
+  const fullHtml = sanitizeWechatHtml(`<section style="${bgInline}">
 ${clone.innerHTML}
 </section>`);
 
@@ -1938,12 +2046,18 @@ function buildMixedCss() {
 }
 
 // ========== STATE PERSISTENCE ==========
+function syncImgSlotBtn() {
+  const btn = document.getElementById('imgSlotBtn');
+  if (btn) btn.classList.toggle('active', !!state.imgSlot);
+}
+
 function saveState() {
   try {
     localStorage.setItem('wenyan-editor-state', JSON.stringify({
       theme: state.currentTheme,
       dimensions: state.dimensions,
       mode: state.mode,
+      imgSlot: state.imgSlot,
     }));
   } catch(e) {}
 }
@@ -1965,6 +2079,11 @@ function loadState() {
         }
       }
       if (saved.mode) state.mode = saved.mode;
+      if (typeof saved.imgSlot === 'boolean') {
+        state.imgSlot = saved.imgSlot;
+        imgSlotOn = saved.imgSlot;
+        syncImgSlotBtn();
+      }
       applyTheme(state.currentTheme);
       if (state.mode === 'mix' && Object.keys(state.dimensions).length) {
         applyMixedTheme();
@@ -2008,6 +2127,15 @@ function setupEvents() {
 
   // Copy button
   document.getElementById('copyBtn').addEventListener('click', copyHtml);
+
+  // 图片占位符开关（2026-11-12）
+  document.getElementById('imgSlotBtn').addEventListener('click', () => {
+    state.imgSlot = !state.imgSlot;
+    imgSlotOn = state.imgSlot;
+    syncImgSlotBtn();
+    saveState();
+    renderMarkdown();
+  });
 
   // Toolbar buttons
   document.querySelectorAll('.toolbar-btn').forEach(btn => {

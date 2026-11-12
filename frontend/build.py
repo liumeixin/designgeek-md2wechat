@@ -324,6 +324,43 @@ def build():
         "wedraft-jade-notes": "青岚 松青书页",
         "wedraft-blueprint": "蓝图 理性蓝调",
         "wedraft-cinnabar": "朱砂 砖红篇章",
+        # 2026-11-12：移植自 zhaotab（找Tab）公众号排版 https://www.zhaotab.com/typeset
+        # 装饰为 CSS 近似（原实现靠 <span> 包裹），非像素级复刻
+        "zt-simple": "找Tab 简约",
+        "zt-orange": "找Tab 橙心",
+        "zt-mint": "找Tab 薄荷",
+        "zt-green": "找Tab 墨绿",
+        "zt-forest": "找Tab 森林",
+        "zt-blue": "找Tab 科技蓝",
+        "zt-ocean": "找Tab 海洋",
+        "zt-violet": "找Tab 紫罗兰",
+        "zt-rose": "找Tab 玫瑰",
+        "zt-sakura": "找Tab 樱花",
+        "zt-lemon": "找Tab 柠檬",
+        "zt-notebook": "找Tab 手账",
+        "zt-coffee": "找Tab 咖啡",
+        "zt-ink": "找Tab 书香",
+        "zt-gold": "找Tab 黑金",
+        "zt-news": "找Tab 报纸",
+        "zt-grid": "找Tab 方格本",
+        "zt-blush": "找Tab 粉笺",
+        "zt-festival": "找Tab 国潮",
+        "zt-terminal": "找Tab 终端",
+        "zt-docs": "找Tab 文档",
+        "zt-magazine": "找Tab 杂志",
+        "zt-pop": "找Tab 波普",
+        "zt-timeline": "找Tab 时间轴",
+        "zt-seal": "找Tab 朱印",
+        "zt-whisper": "找Tab 留白",
+        "zt-neon": "找Tab 霓虹",
+        "zt-kraft": "找Tab 牛皮纸",
+        "zt-briefing": "找Tab 简报",
+        "zt-bubble": "找Tab 对话框",
+        "zt-inkwash": "找Tab 水墨",
+        "zt-nordic": "找Tab 北欧",
+        "zt-candy": "找Tab 糖果",
+        "zt-feed": "找Tab 卡片流",
+        "zt-checklist": "找Tab 清单",
     }
 
     # Generate theme CSS map as JS
@@ -350,13 +387,19 @@ def build():
     #        （2026-10-12 改 ugreen h1 字号时正是这样被吃掉的）
     # 判据：显式名单。两类主题的长度比分别是 1.0 与 2.7+，用「谁更长」当判据
     # 在边界上不可靠（差 2 个字符就会翻转），所以不再依赖长度比较。
+    # CSS 文件本身就是完整主题的名单 —— 这些主题以 CSS 为准，不参与「谁更长」比较。
+    # · 4 个手写主题：dark-green / notebook-blue / notebook-purple / ugreen
+    # · wedraft-* / zt-*：从外部模板移植的完整主题，CSS 是唯一源
+    # 其余 15 个主题的 CSS 只是 --wy-* 令牌调色板，完整主题在 themes.json 里，
+    # 所以不能一刀切「有 CSS 就以 CSS 为准」。
     CSS_AUTHORITATIVE = {"dark-green", "notebook-blue", "notebook-purple", "ugreen"}
+    CSS_PREFIX_AUTHORITATIVE = ("wedraft-", "zt-")
     existing_themes_path = OUTPUT / "themes.json"
     if existing_themes_path.exists():
         try:
             existing_themes = json.loads(existing_themes_path.read_text(encoding='utf-8'))
             for name, css in theme_css_js.items():
-                if name in CSS_AUTHORITATIVE:
+                if name in CSS_AUTHORITATIVE or name.startswith(CSS_PREFIX_AUTHORITATIVE):
                     continue  # 以 CSS 文件为准（theme_css_js 里已是 CSS 原文）
                 # 其余主题：保留更长的现有条目（手写 > 自动抽取）
                 if name in existing_themes and len(existing_themes[name]) > len(css):

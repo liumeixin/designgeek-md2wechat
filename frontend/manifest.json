@@ -95,6 +95,146 @@
     {
       "id": "winter",
       "name": "Winter 冬日"
+    },
+    {
+      "id": "zt-blue",
+      "name": "找Tab 科技蓝"
+    },
+    {
+      "id": "zt-blush",
+      "name": "找Tab 粉笺"
+    },
+    {
+      "id": "zt-briefing",
+      "name": "找Tab 简报"
+    },
+    {
+      "id": "zt-bubble",
+      "name": "找Tab 对话框"
+    },
+    {
+      "id": "zt-candy",
+      "name": "找Tab 糖果"
+    },
+    {
+      "id": "zt-checklist",
+      "name": "找Tab 清单"
+    },
+    {
+      "id": "zt-coffee",
+      "name": "找Tab 咖啡"
+    },
+    {
+      "id": "zt-docs",
+      "name": "找Tab 文档"
+    },
+    {
+      "id": "zt-feed",
+      "name": "找Tab 卡片流"
+    },
+    {
+      "id": "zt-festival",
+      "name": "找Tab 国潮"
+    },
+    {
+      "id": "zt-forest",
+      "name": "找Tab 森林"
+    },
+    {
+      "id": "zt-gold",
+      "name": "找Tab 黑金"
+    },
+    {
+      "id": "zt-green",
+      "name": "找Tab 墨绿"
+    },
+    {
+      "id": "zt-grid",
+      "name": "找Tab 方格本"
+    },
+    {
+      "id": "zt-ink",
+      "name": "找Tab 书香"
+    },
+    {
+      "id": "zt-inkwash",
+      "name": "找Tab 水墨"
+    },
+    {
+      "id": "zt-kraft",
+      "name": "找Tab 牛皮纸"
+    },
+    {
+      "id": "zt-lemon",
+      "name": "找Tab 柠檬"
+    },
+    {
+      "id": "zt-magazine",
+      "name": "找Tab 杂志"
+    },
+    {
+      "id": "zt-mint",
+      "name": "找Tab 薄荷"
+    },
+    {
+      "id": "zt-neon",
+      "name": "找Tab 霓虹"
+    },
+    {
+      "id": "zt-news",
+      "name": "找Tab 报纸"
+    },
+    {
+      "id": "zt-nordic",
+      "name": "找Tab 北欧"
+    },
+    {
+      "id": "zt-notebook",
+      "name": "找Tab 手账"
+    },
+    {
+      "id": "zt-ocean",
+      "name": "找Tab 海洋"
+    },
+    {
+      "id": "zt-orange",
+      "name": "找Tab 橙心"
+    },
+    {
+      "id": "zt-pop",
+      "name": "找Tab 波普"
+    },
+    {
+      "id": "zt-rose",
+      "name": "找Tab 玫瑰"
+    },
+    {
+      "id": "zt-sakura",
+      "name": "找Tab 樱花"
+    },
+    {
+      "id": "zt-seal",
+      "name": "找Tab 朱印"
+    },
+    {
+      "id": "zt-simple",
+      "name": "找Tab 简约"
+    },
+    {
+      "id": "zt-terminal",
+      "name": "找Tab 终端"
+    },
+    {
+      "id": "zt-timeline",
+      "name": "找Tab 时间轴"
+    },
+    {
+      "id": "zt-violet",
+      "name": "找Tab 紫罗兰"
+    },
+    {
+      "id": "zt-whisper",
+      "name": "找Tab 留白"
     }
   ],
   "dimensions": [
