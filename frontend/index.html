@@ -284,6 +284,22 @@ html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Sego
 }
 .dim-select:focus { border-color: var(--ui-accent); }
 
+/* ========== LOCAL MD IMPORT (2026-11-18) ========== */
+.editor-pane.drag-over { outline: 2px dashed var(--ui-accent); outline-offset: -6px; }
+.import-dialog {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center;
+}
+.import-dialog[hidden] { display: none; }
+.import-dialog-box {
+  background: var(--ui-panel-bg); border: 1px solid var(--ui-border); border-radius: 10px;
+  padding: 20px 22px; min-width: 340px; max-width: 90vw; box-shadow: 0 12px 40px rgba(0,0,0,.18);
+}
+.import-dialog-title { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+.import-dialog-body { font-size: 13px; color: #666; line-height: 1.6; margin-bottom: 18px; word-break: break-all; }
+.import-dialog-body b { color: var(--ui-text); }
+.import-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
 /* ========== PREVIEW AREA: FULL THEME (when in whole-theme mode) ========== */
 /* These selectors ensure the preview uses the correct theme */
 </style>
@@ -295,6 +311,12 @@ html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Sego
   <div class="header">
     <div class="logo">✦ DesignGeek Editor</div>
     <div class="spacer"></div>
+
+    <button id="importBtn" class="btn" title="导入本地 Markdown 文件（也可直接拖到左侧编辑区）">
+      <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+      导入 MD
+    </button>
+    <input type="file" id="importFile" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden>
 
     <select id="themeSelect" class="theme-select" title="整体主题切换">
       <option value="">选择主题...</option>
@@ -369,6 +391,19 @@ html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Sego
     <!-- Right Panel: Dimension Switcher -->
     <div id="rightPanel" class="right-panel">
       <div id="dimPanelContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 本地导入冲突处理：替换 / 追加 / 取消 -->
+<div id="importDialog" class="import-dialog" hidden>
+  <div class="import-dialog-box">
+    <div class="import-dialog-title">导入 Markdown 文件</div>
+    <div class="import-dialog-body">编辑区已有内容，如何处理 <b id="importFileName"></b>？</div>
+    <div class="import-dialog-actions">
+      <button class="btn" data-import="cancel">取消</button>
+      <button class="btn" data-import="append">追加</button>
+      <button class="btn btn-primary" data-import="replace">替换</button>
     </div>
   </div>
 </div>
@@ -2201,6 +2236,93 @@ function loadState() {
   } catch(e) {}
 }
 
+// ========== LOCAL MD IMPORT (2026-11-18) ==========
+function askImportMode(fileName) {
+  return new Promise(resolve => {
+    const dlg = document.getElementById('importDialog');
+    document.getElementById('importFileName').textContent = fileName;
+    dlg.hidden = false;
+    const buttons = dlg.querySelectorAll('[data-import]');
+    const cleanup = (mode) => {
+      dlg.hidden = true;
+      buttons.forEach(b => b.removeEventListener('click', onClick));
+      document.removeEventListener('keydown', onKey);
+      resolve(mode);
+    };
+    const onClick = (e) => cleanup(e.currentTarget.dataset.import);
+    const onKey = (e) => { if (e.key === 'Escape') cleanup('cancel'); };
+    buttons.forEach(b => b.addEventListener('click', onClick));
+    document.addEventListener('keydown', onKey);
+  });
+}
+
+async function importMdFile(file) {
+  if (!file) return;
+  const editor = document.getElementById('editor');
+  let text;
+  try {
+    text = await file.text();
+  } catch (err) {
+    alert('读取文件失败：' + err.message);
+    return;
+  }
+  text = text.replace(/^\uFEFF/, ''); // 去掉 UTF-8 BOM，否则首个 # 解析不出来
+  if (!text.trim()) {
+    alert('文件内容为空。');
+    return;
+  }
+
+  //  untouched 的示例稿直接替换，不为它弹冲突框
+  const current = editor.value;
+  let mode = 'replace';
+  if (current.trim() && current !== SAMPLE_MD) {
+    mode = await askImportMode(file.name);
+  }
+  if (mode === 'cancel') return;
+
+  if (mode === 'append') {
+    editor.value = current + '\n\n' + text;
+    editor.focus();
+    editor.setSelectionRange(editor.value.length, editor.value.length);
+  } else {
+    editor.value = text;
+    editor.focus();
+    editor.setSelectionRange(0, 0);
+  }
+  renderMarkdown();
+}
+
+function setupImportEvents() {
+  const pane = document.querySelector('.editor-pane');
+  const fileInput = document.getElementById('importFile');
+
+  document.getElementById('importBtn').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    importMdFile(e.target.files[0]);
+    e.target.value = ''; // 允许连续导入同一个文件
+  });
+
+  // 拖到编辑区导入；拖到页面其它位置只阻止浏览器直接打开文件
+  document.addEventListener('dragover', e => e.preventDefault());
+  document.addEventListener('drop', e => e.preventDefault());
+  ['dragenter', 'dragover'].forEach(type => pane.addEventListener(type, e => {
+    e.preventDefault();
+    pane.classList.add('drag-over');
+  }));
+  pane.addEventListener('dragleave', e => {
+    if (!pane.contains(e.relatedTarget)) pane.classList.remove('drag-over');
+  });
+  pane.addEventListener('drop', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    pane.classList.remove('drag-over');
+    const files = Array.from(e.dataTransfer.files || []);
+    const md = files.find(f => /\.(md|markdown|txt)$/i.test(f.name));
+    if (md) importMdFile(md);
+    else if (files.length) alert('请拖入 .md / .markdown / .txt 文件。');
+  });
+}
+
 // ========== EVENTS ==========
 function setupEvents() {
   // Editor input
@@ -2245,6 +2367,9 @@ function setupEvents() {
     saveState();
     renderMarkdown();
   });
+
+  // 本地 md 导入（按钮 + 拖拽）
+  setupImportEvents();
 
   // Toolbar buttons
   document.querySelectorAll('.toolbar-btn').forEach(btn => {
