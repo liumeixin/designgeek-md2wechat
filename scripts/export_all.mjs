@@ -13,6 +13,8 @@
  * 示例：
  *   node scripts/export_all.mjs http://127.0.0.1:18888/ sample.md out/ 1 zt-
  *     → 打开图片占位符，只导 zt- 开头的 35 套
+ *   node scripts/export_all.mjs http://127.0.0.1:18888/ sample.md out/ 0 '' 0
+ *     → 关掉「微信原生样式」，导出主题原样（供 compare_preview_export 做保真比对）
  *
  * 前置：编辑器已在 <页面URL> 运行（run.bat 或 docker compose up）。
  * 说明：脚本通过劫持 navigator.clipboard.write 捕获 copyHtml() 的真实产物，
@@ -22,15 +24,17 @@ import { mkdirSync, writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { loadChromium, launchBrowser, openApp } from './_pw.mjs';
 
-const [,, url, mdFile, outDir, slotArg, prefixArg] = process.argv;
+const [,, url, mdFile, outDir, slotArg, prefixArg, nativeArg] = process.argv;
 
 if (!url || !mdFile || !outDir) {
-  console.error('用法: node scripts/export_all.mjs <页面URL> <样稿.md> <输出目录> [slot=0|1] [主题前缀]');
+  console.error('用法: node scripts/export_all.mjs <页面URL> <样稿.md> <输出目录> [slot=0|1] [主题前缀] [native=0|1]');
   process.exit(1);
 }
 
 const wantSlot = slotArg === '1';
 const prefix = prefixArg || '';
+// 微信原生样式默认跟随编辑器开关（true）；显式传 0 才关闭，供主题保真比对用。
+const wantNative = nativeArg === undefined ? null : nativeArg === '1';
 const md = readFileSync(mdFile, 'utf8');
 mkdirSync(outDir, { recursive: true });
 
@@ -42,7 +46,7 @@ page.on('pageerror', e => console.log('[pageerror]', e.message));
 await openApp(page, url);
 
 const ids = await page.evaluate(p => Object.keys(THEMES).filter(t => t.startsWith(p)).sort(), prefix);
-console.log(`待导出主题数: ${ids.length}${prefix ? `（前缀 ${prefix}）` : ''}  图片占位符: ${wantSlot ? '开' : '关'}`);
+console.log(`待导出主题数: ${ids.length}${prefix ? `（前缀 ${prefix}）` : ''}  图片占位符: ${wantSlot ? '开' : '关'}  微信原生样式: ${wantNative === null ? '跟随设置' : (wantNative ? '开' : '关')}`);
 if (!ids.length) {
   console.error('没有匹配的主题，检查前缀或确认 THEMES 已加载。');
   await browser.close();
@@ -52,13 +56,14 @@ if (!ids.length) {
 const fails = [];
 for (const theme of ids) {
   try {
-    const html = await page.evaluate(async ({ md, theme, wantSlot }) => {
+    const html = await page.evaluate(async ({ md, theme, wantSlot, wantNative }) => {
       const ed = document.getElementById('editor');
       ed.value = md;
       ed.dispatchEvent(new Event('input', { bubbles: true }));
       applyTheme(theme);
       imgSlotOn = wantSlot;
       state.imgSlot = wantSlot;
+      if (wantNative !== null) state.wxNative = wantNative;
       renderMarkdown();
       await new Promise(r => setTimeout(r, 120));
 
@@ -74,7 +79,7 @@ for (const theme of ids) {
       copyHtml();
       await new Promise(r => setTimeout(r, 120));
       return captured;
-    }, { md, theme, wantSlot });
+    }, { md, theme, wantSlot, wantNative });
 
     if (!html) { fails.push([theme, '捕获为空（copyHtml 未走剪贴板分支？）']); continue; }
     writeFileSync(join(outDir, theme + '.html'), html, 'utf8');

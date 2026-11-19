@@ -23,6 +23,25 @@
 自检：`python scripts/check_wechat_spec.py out.html --contrast`（退出码 0/1/2）。
 完整审计报告：`docs/微信编辑器规范合规-2026-10-12.md`。
 
+### 微信原生样式开关（2026-11-19，默认开）
+
+`state.wxNative` / 工具栏「微信原生样式」按钮，只影响 `copyHtml()` 导出，**不改预览主题**。
+
+- **痛点**：主题代码块/表格粘到公众号能显示，但长行/宽表会被截断拖不动。
+- **做法**：`adaptToWechatNative()` 在样式内联 + 伪元素注入之后跑——
+  - 代码块 `pre>code` → 微信原生 `section.code-snippet__fix`（左侧真实数字行号 `ul>li` +
+    右侧 `pre.code-snippet__js[data-lang]` 带 `overflow-x:auto`）；每行一个 `code>span.code-snippet_outer`。
+  - 表格 `.table-wrap` → `overflow-x:auto` + `min-width`（按列数估算，上限 900px）。
+  - 两者都加 **`data-ignore-width`** —— 这是 §1.4.4 明确认可的「横向滚动容器」豁免，
+    自检脚本第 122 行已支持。白名单 `WX_ALLOWED_ATTRS` 已放行该属性与 `data-lang`。
+- **配色**：结构换微信原生，配色继承主题（从已内联的 code/pre style 抽 color/background/border）。
+  行号用代码正文色，不用 opacity（§1.1 禁）或半透明（叠深底会低对比度）。
+- **验收**：`export_all.mjs` 第 6 参 `native=0` 可关开关导主题原样，与改前字节一致 → 改动隔离可证。
+  `compare_preview_export.mjs` 遇到元素数变化会跳过该项，原生结构不会造成误报。
+  实测（375px 窄屏 + 超长样稿）：开关开时 code `scrollWidth 1886 > client 333`、
+  table `900 > 375` 均可横滑；关时 `overflow:hidden` 且 scrollWidth≈clientWidth（截断）。
+  规范自检开/关同为 1 项既有违规（主题装饰色），无新增。
+
 ## 🔀 提交约定（用户 2026-10-12 定）
 
 - 🔴 **改动后不要自行提交** —— 先**提醒用户确认**；用户确认后才提交并推送到 Gitea。
@@ -97,8 +116,8 @@
 | `backend/markdown_parser.py` | 正则 Markdown 解析器 |
 | `backend/static/css/themes/` | 59 个主题 CSS 文件（其中 44 个是**真源**，见下） |
 | `scripts/html2png.mjs` | Playwright 截图脚本（桌面端） |
-| `scripts/export_all.mjs` | 一次启动批量导出全部/指定前缀主题的真实复制产物（改主题后必跑） |
-| `scripts/compare_preview_export.mjs` | 校验「导出 == 预览」：逐元素比对计算样式，实质差异非 0 时退出码 1 |
+| `scripts/export_all.mjs` | 一次启动批量导出全部/指定前缀主题的真实复制产物（改主题后必跑）；第 6 参 `native=0` 可关微信原生样式做保真对照 |
+| `scripts/compare_preview_export.mjs` | 校验「导出 == 预览」：逐元素比对计算样式，实质差异非 0 时退出码 1（元素数不同会跳过该项，**不会**因原生适配的结构变化误报） |
 | `scripts/_pw.mjs` | 上面两个脚本共用的 Playwright 启动/Chromium 探测 helper |
 | `scripts/check_wechat_spec.py` | 产出 HTML 的微信规范静态自检（§1.3–§1.6/§3/§4.1.1/§4.5.2） |
 | `scripts/commit_and_push.py` | 提交并推送到 Gitea（多通道回退，token 不落盘） |

@@ -327,6 +327,11 @@ html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Sego
       图片占位符
     </button>
 
+    <button id="wxNativeBtn" class="btn" title="微信原生样式：代码块换成带行号、可左右滑动的原生结构；表格加横向滚动。关闭则保留主题原样">
+      <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3h2V5h3V3zm11 0h-3v2h3v3h2V5a2 2 0 0 0-2-2zM5 16H3v3a2 2 0 0 0 2 2h3v-2H5v-3zm16 0h-2v3h-3v2h3a2 2 0 0 0 2-2v-3zM9 8h2v8H9V8zm4 0h2v8h-2V8z"/></svg>
+      微信原生样式
+    </button>
+
     <button id="togglePanel" class="btn" title="元素风格混搭面板">
       <svg viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
       元素混搭
@@ -415,6 +420,7 @@ const state = {
   dimensions: {},  // { dimKey: themeName } — only set when overridden
   mode: 'whole',   // 'whole' or 'mix'
   imgSlot: false,  // 图片占位符：把非微信图床的图换成占位框
+  wxNative: true,  // 微信原生样式：代码块=行号+横滑，表格=横滑容器（默认开）
 };
 
 // ========== DATA (injected by build) ==========
@@ -758,7 +764,10 @@ const WX_ALLOWED_TAGS = new Set(['section', 'p', 'span', 'strong', 'b', 'em', 'i
   'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption',
   'figure', 'figcaption', 'div', 'abbr', 'cite', 'q', 'time', 'label']);
 const WX_ALLOWED_ATTRS = new Set(['style', 'href', 'src', 'alt', 'class',
-  'colspan', 'rowspan', 'title', 'data-orig-url']);
+  'colspan', 'rowspan', 'title', 'data-orig-url',
+  // 微信原生样式所需：data-ignore-width 是官方 §1.4.4 的横向滚动豁免标记，
+  // data-lang 是编辑器原生代码块的语言标记（点一下触发高亮靠它）。
+  'data-ignore-width', 'data-lang']);
 
 function sanitizeWechatHtml(html) {
   const doc = new DOMParser().parseFromString(
@@ -1692,6 +1701,120 @@ function readDecl(body, prop) {
   return body.slice(start).trim();
 }
 
+// ========== 微信原生样式适配（2026-11-19）==========
+// 用户痛点：主题代码块/表格复制过去能显示，但长行/宽表会被微信截断，拖不动。
+// 微信编辑器原生插入的代码块 = 左侧行号列 + 右侧可横滑 pre，表格外层也是可横滑容器。
+// 官方规范 §1.4.4 明确把「横向滚动容器」列为 data-ignore-width 豁免场景 ——
+// 所以这里不是碰运气内联 overflow，而是照规范建结构 + 豁免标记。
+//
+// 设计：结构换成微信原生（行号 + 横滑），配色继承主题（已内联的 color/background/border
+// 原样带到新节点）。关掉开关则完全不动，保留主题原结构。
+function adaptToWechatNative(root, doc) {
+  // ---- 代码块：pre>code → 微信原生 code-snippet 结构 ----
+  root.querySelectorAll('pre').forEach(pre => {
+    const code = pre.querySelector('code');
+    if (!code) return;                       // §1.8：没有 code 的 pre 不动（自检会报）
+    const preStyle = pre.getAttribute('style') || '';
+    const codeStyle = code.getAttribute('style') || '';
+    const langCls = [...code.classList].find(c => /^language-/.test(c)) || '';
+    const lang = langCls.replace(/^language-/, '');
+
+    // 取代码纯文本，按行拆。marked 已在末尾留换行，去掉空尾行避免多一个行号。
+    const text = code.textContent.replace(/\n$/, '');
+    const lines = text.split('\n');
+
+    // 从已内联样式里抽出配色，构造「微信结构 + 主题配色」的声明。
+    // pickDecl 只取属性名精确匹配的声明，忽略重复/大小写。
+    const pickDecl = (css, prop) => {
+      const m = css.match(new RegExp('(?:^|;)' + prop + ':([^;]+)', 'i'));
+      return m ? m[1].trim() : '';
+    };
+    const bg = pickDecl(codeStyle, 'background-color') || pickDecl(preStyle, 'background-color');
+    const fg = pickDecl(codeStyle, 'color') || pickDecl(preStyle, 'color');
+    const fsz = pickDecl(codeStyle, 'font-size') || '14px';
+    const ff = pickDecl(codeStyle, 'font-family') || 'monospace';
+    const lh = pickDecl(codeStyle, 'line-height') || pickDecl(preStyle, 'line-height') || '1.6';
+    const border = pickDecl(preStyle, 'border');
+    const radius = pickDecl(preStyle, 'border-radius');
+    const margin = pickDecl(preStyle, 'margin') || '16px 0';
+    const pad = pickDecl(preStyle, 'padding') || '12px';
+    // 行号色直接用代码正文色：主题里它已通过 §4.1.1 对比度（深色主题浅字、
+    // 浅色主题深字）。不用 opacity/半透明 —— §1.1 禁 opacity，且半透明叠深底
+    // 会被解析成低对比度灰。视觉权重靠字号/位置区分，不靠降对比度。
+    const numColor = fg || 'inherit';
+
+    const wrap = doc.createElement('section');
+    wrap.className = 'code-snippet__fix';
+    wrap.setAttribute('data-ignore-width', '');
+    let wrapCss = 'display:flex;line-height:' + lh + ';font-size:' + fsz +
+      ';margin:' + margin + ';border-radius:' + (radius || '4px') + ';';
+    if (border) wrapCss += 'border:' + border + ';';
+    if (bg) wrapCss += 'background-color:' + bg + ';';
+    wrap.setAttribute('style', wrapCss);
+
+    // 左侧行号列：真实文本数字，不依赖 CSS counter（微信编辑器会清洗 counter）
+    const nums = doc.createElement('ul');
+    nums.className = 'code-snippet__line-index';
+    nums.setAttribute('style', 'flex-shrink:0;margin:0;padding:' + pad +
+      ';list-style:none;text-align:right;color:' + numColor + ';user-select:none;');
+    lines.forEach((_, i) => {
+      const li = doc.createElement('li');
+      li.setAttribute('style', 'list-style:none;text-align:right;line-height:' + lh + ';');
+      li.textContent = String(i + 1);
+      nums.appendChild(li);
+    });
+
+    // 右侧代码区：pre 承担横滑，每行一个 code>span.code-snippet_outer
+    const codePre = doc.createElement('pre');
+    codePre.className = 'code-snippet__js';
+    if (lang) codePre.setAttribute('data-lang', lang);
+    codePre.setAttribute('style', 'flex:1;min-width:0;margin:0;padding:' + pad +
+      ';overflow-x:auto;white-space:normal;-webkit-overflow-scrolling:touch;' +
+      'font-family:' + ff + ';font-size:' + fsz + ';line-height:' + lh + ';');
+    lines.forEach(line => {
+      const one = doc.createElement('code');
+      one.setAttribute('style', 'display:block;white-space:pre;color:' + (fg || 'inherit') +
+        ';font-family:' + ff + ';font-size:' + fsz + ';');
+      const span = doc.createElement('span');
+      span.className = 'code-snippet_outer';
+      span.textContent = line || '\u200b';   // 空行给零宽字符，保住行高
+      one.appendChild(span);
+      codePre.appendChild(one);
+    });
+
+    wrap.appendChild(nums);
+    wrap.appendChild(codePre);
+    pre.parentNode.replaceChild(wrap, pre);
+  });
+
+  // ---- 表格：外层容器可横向滑动 + 规范豁免 ----
+  root.querySelectorAll('table').forEach(table => {
+    let wrap = table.parentElement;
+    if (!wrap || !wrap.classList.contains('table-wrap')) {
+      // 兜底：理论上 enhanceWechatHtml 已包好，这里防御性补一次
+      wrap = doc.createElement('section');
+      wrap.className = 'table-wrap';
+      table.parentNode.insertBefore(wrap, table);
+      wrap.appendChild(table);
+    }
+    wrap.setAttribute('data-ignore-width', '');
+    // 保留原有 overflow:hidden 的圆角裁切，但改为 X 轴可滑动。
+    // 用 !important 吗？不 —— 规范 §4.5.2 禁止。直接覆盖 style 属性里的值。
+    let ws = wrap.getAttribute('style') || '';
+    ws = ws.replace(/(?:^|;)overflow[^;]*/gi, '').replace(/^;/, '');
+    wrap.setAttribute('style', 'overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;' + ws);
+
+    // 给 table 一个「按列数估算」的最小宽度：窄屏下撑开容器触发横滑，
+    // 宽屏下 width:100% 仍占满，不会凭空变宽。避免固定 px 触发 §1.4。
+    const cols = table.querySelectorAll('thead th').length ||
+                 table.querySelectorAll('tr:first-child th, tr:first-child td').length || 3;
+    const minW = Math.min(cols * 120, 900);
+    let ts = table.getAttribute('style') || '';
+    ts = ts.replace(/(?:^|;)min-width[^;]*/gi, '').replace(/^;/, '');
+    table.setAttribute('style', 'min-width:' + minW + 'px;' + ts);
+  });
+}
+
 // ========== COPY HTML (v2: inline all styles + pseudo-elements) ==========
 function copyHtml() {
   const wenyan = document.getElementById('wenyan');
@@ -2005,6 +2128,13 @@ function copyHtml() {
     if (origUrl) img.setAttribute('src', origUrl);
   });
 
+  // 4.5 微信原生样式适配（开关默认开）：代码块换带行号+横滑结构，表格加横滑容器。
+  //     放在 pseudo 注入之后 —— 旧 pre 上被注入的主题装饰 span 会随旧节点一起丢弃，
+  //     原生代码块只保留真实行号，不会带出主题 ::before 的幽灵字。
+  if (state.wxNative) {
+    adaptToWechatNative(clone, document);
+  }
+
   // 5. Extract #wenyan 的容器级声明到外层 <section>
   //    §4.1.1：容器同时声明背景色与文字色，保证 Dark Mode 下对比度关系明确。
   //    2026-11-12：字号 / 行高 / 字距 / 对齐也一并下沉。此前外层硬编码 17px / 1.75，
@@ -2195,6 +2325,11 @@ function syncImgSlotBtn() {
   if (btn) btn.classList.toggle('active', !!state.imgSlot);
 }
 
+function syncWxNativeBtn() {
+  const btn = document.getElementById('wxNativeBtn');
+  if (btn) btn.classList.toggle('active', !!state.wxNative);
+}
+
 function saveState() {
   try {
     localStorage.setItem('wenyan-editor-state', JSON.stringify({
@@ -2202,6 +2337,7 @@ function saveState() {
       dimensions: state.dimensions,
       mode: state.mode,
       imgSlot: state.imgSlot,
+      wxNative: state.wxNative,
     }));
   } catch(e) {}
 }
@@ -2228,12 +2364,18 @@ function loadState() {
         imgSlotOn = saved.imgSlot;
         syncImgSlotBtn();
       }
+      if (typeof saved.wxNative === 'boolean') {
+        state.wxNative = saved.wxNative;
+        syncWxNativeBtn();
+      }
       applyTheme(state.currentTheme);
       if (state.mode === 'mix' && Object.keys(state.dimensions).length) {
         applyMixedTheme();
       }
     }
   } catch(e) {}
+  // 无 saved 记录时也要按默认值（wxNative=true）点亮按钮
+  syncWxNativeBtn();
 }
 
 // ========== LOCAL MD IMPORT (2026-11-18) ==========
@@ -2366,6 +2508,13 @@ function setupEvents() {
     syncImgSlotBtn();
     saveState();
     renderMarkdown();
+  });
+
+  // 微信原生样式开关（2026-11-19）：只影响 copyHtml 导出，不改预览主题
+  document.getElementById('wxNativeBtn').addEventListener('click', () => {
+    state.wxNative = !state.wxNative;
+    syncWxNativeBtn();
+    saveState();
   });
 
   // 本地 md 导入（按钮 + 拖拽）
